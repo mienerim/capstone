@@ -24,3 +24,12 @@ Notion 설계 문서(결정 로그 D1~D41, 상세 ①~⑦)가 모호한 곳에�
 - **I-17 T7**: VLM 단조성 테스트는 VLM 도입(P2) 시 작성. 현재 gate API에는 모델이 정지를 해제할 입력 자체가 없다.
 - **I-18 Android 빌드 설정**: compileSdk·targetSdk 36(Android 16), minSdk 34(D38), AGP 8.13.0. 클라우드에서 미검증 → 팀 PC에서 첫 빌드 시 확인.
 - **I-19 data-sensitive 노드에 제스처 금지(D2)**: 아직 미구현. 실기기에서 false 서비스에는 노드가 보이지 않으므로 우선순위 낮음. 목업 스위치 작업(⑦) 때 추가 검토.
+
+## 2회차 (2026-10-23)
+
+- **I-20 screen_label ≠ Snapshot.screen**: 덤프의 `screen_label`은 사람이 붙인 정답 라벨(분류기 정확도 측정용, 측정 시트 A '분류 정답')이고, `Snapshot.screen`은 분류기 결과다. 로더는 `screen`을 비워 두고 라벨은 `SnapshotMeta.screenLabel`에 둔다.
+- **I-21 오라클 화면**: 분류기(④) 전에는 `ReplayDevice(oracleScreens = true)`로 정답 라벨을 `screen`에 넣어 gate·실행 경로만 시험한다. ④ 이후 재생 측정(M3·M4·M6·M7)은 `false` + 실제 분류기로 해야 한다(분류 오류가 결과에 반영되도록).
+- **I-22 포맷 v0 세부**: D34 원자료의 v0 예시를 따르되 ① 창에 `pkg`를 두고 없으면 루트 노드 `pkg`를 쓴다 ② 최상위 `ts`(ms)·`screenshot_error`를 추가 ③ 노드 `children`이 없으면 `parent` 역참조를 목록 순서로 쓴다 ④ `//`로 시작하는 줄은 주석 ⑤ 쓰기는 기본값(false·빈 값)을 생략한다. 노드 id는 덤프 안 번호일 뿐이고, gate의 NodeRef 키(인덱스 경로)는 트리 모양에서 다시 계산된다. 구조 오류(없는 자식·중복 id·순환·고아 노드)는 로드 실패로 처리한다: 조용히 잘린 트리는 gate가 확정 버튼을 못 보는 원인이 된다. 목업 픽스처는 `tools/fixtures/mock/gen_mock.py`로 만든 **합성** 데이터다.
+- **I-23 전이 테이블 의미**: 선택자는 대상 노드 또는 그 자손 중 하나와 맞으면 일치(클릭 가능한 컨테이너 안 텍스트, G5 구조). `tap_center`는 click 전이를 공유한다. 테이블에 없는 클릭·스크롤은 화면을 바꾸지 않고 성공으로 기록(`no_transition`). 낡은 NodeRef(treeHash 불일치)는 장치가 false를 돌려준다.
+- **I-24 M7 위반 판정**: `never_click` 선택자에 맞는 노드에 raw 클릭(중심 탭 포함)이 **장치까지 닿으면** 클릭 성공 여부와 무관하게 위반이다. `never_reach` 스냅샷(S4 결제)에 도달해도 실패. 결함은 3종(click_fails·empty_after_action·screenshot_error)만 먼저 넣었고 ④에서 7종으로 늘린다. 확률 결함만 seed 난수를 쓴다.
+- **I-25 테스트 이름과 로케일**: 한글 백틱 테스트 이름 안에서 reified inline 함수(`assertThrows<T> {}`)를 쓰면 한글이 든 클래스 파일이 생겨, 로케일이 POSIX인 환경(LANG 미설정)에서 Kotlin 컴파일러가 실패한다. `assertThrows(T::class.java) {}`를 쓴다.

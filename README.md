@@ -25,7 +25,7 @@
 | `service` | Android | AccessibilityService, 노드 덤퍼, raw `performAction`/`dispatchGesture` | A |
 | `app` | Android | 데모 앱: 고지·동의, 버튼/음성 입력, 고정 알림, 모듈 조립 | C |
 | `mock-app` | Android | 코레일+ 흉내 4화면(S1 검색/S2 결과/S3 좌석+예매하기/S4 결제) + 변형 스위치 | C |
-| `tools` | 순수 Kotlin | JSONL 재생기·하니스(Wilson 하한)·adb 스크립트 | B |
+| `tools` | 순수 Kotlin | JSONL 재생기([`tools/README.md`](tools/README.md))·하니스(Wilson 하한, 예정)·adb 스크립트 | B |
 
 의존 방향: `app → {service, gate/exec, agent-core, app-scenarios, llm}`, `agent-core → gate/core`,
 `service → gate/exec`. agent-core는 service를 볼 수 없으므로 gate를 우회해 누를 방법이 없다.

@@ -29,6 +29,16 @@ yes | $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager --licenses
 $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager "platform-tools" "platforms;android-36" "build-tools;36.0.0"
 ```
 
+## 2026-10-23 (2회차)
+
+| 항목 | 결과 |
+| --- | --- |
+| JDK | 새 컨테이너라 17이 없어 apt `openjdk-17-jdk-headless` 재설치 |
+| Maven Central | 429 반복 → `--max-workers=1` + 30초 간격 재시도로 통과 |
+| dl.google.com / maven.google.com | **여전히 차단(403)**. maven.google.com은 dl.google.com으로 리다이렉트되어 같이 막힘 |
+| 로케일 | `LANG` 미설정(POSIX). 한글 클래스 파일명 주의(DECISIONS-IMPL I-25) |
+| 결과 | 순수 Kotlin 모듈 테스트 69개 통과, Android 모듈 미빌드 |
+
 ## 팀 PC (10-26 기록)
 
 | 항목 | A | B | C |
