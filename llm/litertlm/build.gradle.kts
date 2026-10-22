@@ -19,4 +19,6 @@ kotlin { jvmToolchain(17) }
 dependencies {
     api(project(":llm:core"))
     implementation(libs.litertlm.android)
+    // sendMessageAsync가 Flow를 돌려준다(가정, 10-26 AAR로 확인).
+    implementation(libs.kotlinx.coroutines.core)
 }
