@@ -13,7 +13,7 @@ class ReplayCliTest {
     fun `픽스처와 시나리오는 CLI 검사를 통과한다`() {
         val out = StringBuilder()
         assertTrue(validate(Fixtures.mockJsonl, out), out.toString())
-        assertTrue(out.contains("mock_s3_seat label=SEAT fg=capstone.mock"), out.toString())
+        assertTrue(out.contains("mock_s3_seat label=DETAIL fg=capstone.mock"), out.toString())
         assertTrue(checkScenario(Fixtures.happy, out), out.toString())
         assertTrue(checkScenario(Fixtures.faults, out), out.toString())
     }

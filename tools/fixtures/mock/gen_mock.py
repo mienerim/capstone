@@ -76,8 +76,8 @@ def snap(sid, label, root, ts):
             "windows":[{"id":1,"type":"APPLICATION","pkg":PKG,"active":True,"focused":True,"root":0,"nodes":flatten(root)},
                        {"id":2,"type":"SYSTEM","pkg":"com.android.systemui","root":0,"nodes":[{"id":0,"parent":-1,"cls":"android.widget.FrameLayout","text":"09:41","bounds":[0,0,W,80]}]}]}
 
-out=[snap("mock_s1_popup","SEARCH",s1(True),0), snap("mock_s1_search","SEARCH",s1(),1000), snap("mock_s2_results","RESULT_LIST",s2(),2000),
-     snap("mock_s3_seat","SEAT",s3(),3000), snap("mock_s4_payment","PAYMENT",s4(),4000)]
+out=[snap("mock_s1_popup","POPUP_KNOWN",s1(True),0), snap("mock_s1_search","SEARCH_FORM",s1(),1000), snap("mock_s2_results","RESULT_LIST",s2(),2000),
+     snap("mock_s3_seat","DETAIL",s3(),3000), snap("mock_s4_payment","PAYMENT_GATE",s4(),4000)]
 with open(sys.argv[1],"w",encoding="utf-8") as f:
     f.write("// 목업 4화면(+공지 팝업) 합성 스냅샷. 실기기 덤프가 아니다. 생성: gen_mock.py (DECISIONS-IMPL I-22)\n")
     for s in out: f.write(json.dumps(s, ensure_ascii=False, separators=(",",":"))+"\n")
