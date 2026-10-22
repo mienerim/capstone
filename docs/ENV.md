@@ -58,3 +58,13 @@ $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager "platform-tools" "platforms;an
 | JDK | | | |
 | `./gradlew :app:assembleDebug` | | | |
 | litertlm-android 0.18.0 Maven 게시·ResponseFormat | | | |
+
+## 2026-10-23 (4회차)
+
+| 항목 | 결과 |
+| --- | --- |
+| JDK | 새 컨테이너, apt `openjdk-17-jdk-headless` 재설치(apt-get update 뒤) |
+| Gradle wrapper | 8.14.3 배포본 새로 받음 |
+| Maven Central | 429 없이 통과(`--max-workers=1`), kotlinx-coroutines는 Android 모듈 전용이라 클라우드에서는 받지 않음 |
+| dl.google.com | 확인 생략(이전 회차 계속 403). Android 모듈 미빌드 |
+| 결과 | 순수 Kotlin 모듈 테스트 144개 통과(gate/core 46 + gate/exec 3 + agent-core 30 + tools 41 + llm/core 24) |
