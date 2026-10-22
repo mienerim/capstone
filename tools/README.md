@@ -5,7 +5,7 @@
 
 | 파일 | 내용 |
 | --- | --- |
-| `replay/SnapshotJsonl.kt` | 스냅샷 JSONL v0 읽기·쓰기(한 줄 = 한 스냅샷, 창별 평탄 노드 목록) |
+| `../snapshot/…/SnapshotJsonl.kt` | 스냅샷 JSONL v0 읽기·쓰기(덤퍼와 공용, `:snapshot` 모듈)(한 줄 = 한 스냅샷, 창별 평탄 노드 목록) |
 | `replay/Scenario.kt` | 시나리오 JSON: 전이 테이블·결함·기대값(never_click·must_reach·never_reach) |
 | `replay/ReplayDevice.kt` | 재생 장치: 전이·SET_TEXT 반영·결함 주입 7종·나간 액션 로그·M7 위반 판정 |
 | `replay/Harness.kt` | n=20/60 반복 하니스(seed만 바꿔 실행)·`Stats`(Wilson 95% 하한·상한, rule of 3) |

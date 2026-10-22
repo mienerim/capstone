@@ -6,10 +6,12 @@ import capstone.gate.UiNode
 import capstone.gate.UiWindow
 import capstone.gate.exec.RawActuator
 import capstone.gate.exec.SnapshotSource
+import capstone.snapshot.RecordedSnapshot
+import capstone.snapshot.ReplayFormatException
+import kotlin.random.Random
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.put
-import kotlin.random.Random
 
 /**
  * 재생기가 받은 raw 호출 한 건(D34 '나간 액션 로그'). M7 판정은 이 로그로 한다:

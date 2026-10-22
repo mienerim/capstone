@@ -3,14 +3,16 @@ package capstone.tools.replay
 import capstone.gate.BlockReason
 import capstone.gate.ExecResult
 import capstone.gate.NodeRef
-import org.junit.jupiter.api.Test
-import org.junit.jupiter.api.Assertions.assertThrows
+import capstone.snapshot.ReplayFormatException
+import capstone.snapshot.SnapshotJsonl
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
 import kotlin.test.assertIs
 import kotlin.test.assertNotEquals
 import kotlin.test.assertNull
 import kotlin.test.assertTrue
+import org.junit.jupiter.api.Assertions.assertThrows
+import org.junit.jupiter.api.Test
 
 class ReplayDeviceTest {
 
@@ -140,5 +142,11 @@ class ReplayDeviceTest {
         val sc = parse(""""transitions":[{"from":"a","on":{"action":"back"},"to":"nowhere"}]""")
             .copy(start = "mock_s1_search", transitions = listOf(Transition("mock_s1_search", ReplayAction.BACK, null, "nowhere")))
         assertThrows(ReplayFormatException::class.java) { ReplayDevice(sc, Fixtures.pool()) }
+    }
+
+    @Test
+    fun `같은 snap_id가 두 번이면 풀 생성 실패`() {
+        val r = SnapshotJsonl.decodeLine("""{"v":0,"snap_id":"d","windows":[]}""")
+        assertThrows(ReplayFormatException::class.java) { SnapshotPool(listOf(r, r)) }
     }
 }

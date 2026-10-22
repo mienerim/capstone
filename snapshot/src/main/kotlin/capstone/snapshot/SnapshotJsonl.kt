@@ -1,4 +1,4 @@
-package capstone.tools.replay
+package capstone.snapshot
 
 import capstone.gate.Bounds
 import capstone.gate.Snapshot
@@ -254,13 +254,3 @@ object SnapshotJsonl {
         if (value != null) put(key, value)
     }
 }
-
-// ---- JsonObject 접근 도우미(형식이 틀리면 null → 호출자가 기본값 또는 오류) ----
-
-internal fun JsonObject.prim(key: String): JsonPrimitive? = (this[key] as? JsonPrimitive)?.takeUnless { it is JsonNull }
-internal fun JsonObject.str(key: String): String? = prim(key)?.takeIf { it.isString }?.contentOrNull
-internal fun JsonObject.int(key: String): Int? = prim(key)?.takeUnless { it.isString }?.intOrNull
-internal fun JsonObject.long(key: String): Long? = prim(key)?.takeUnless { it.isString }?.longOrNull
-internal fun JsonObject.bool(key: String): Boolean? = prim(key)?.takeUnless { it.isString }?.booleanOrNull
-internal fun JsonObject.obj(key: String): JsonObject? = this[key] as? JsonObject
-internal fun JsonObject.arr(key: String): JsonArray? = this[key] as? JsonArray

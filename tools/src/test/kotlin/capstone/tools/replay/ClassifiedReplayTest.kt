@@ -8,10 +8,11 @@ import capstone.gate.Gate
 import capstone.gate.GatePolicy
 import capstone.gate.exec.GatedExecutor
 import capstone.scenarios.MockKorail
-import org.junit.jupiter.api.Test
+import capstone.snapshot.SnapshotJsonl
 import kotlin.test.assertEquals
 import kotlin.test.assertIs
 import kotlin.test.assertTrue
+import org.junit.jupiter.api.Test
 
 /** 오라클 라벨 대신 실제 분류기(MockKorail 서명)를 끼운 재생. M2(분류 정확도)의 합성 데이터 버전. */
 class ClassifiedReplayTest {

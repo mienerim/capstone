@@ -34,6 +34,7 @@ include(
     ":agent-core",
     ":llm:core",
     ":app-scenarios",
+    ":snapshot",
     ":tools",
 )
 
@@ -41,7 +42,7 @@ gradle.extra["capstone.androidEnabled"] = androidEnabled
 
 if (androidEnabled) {
     include(
-        ":service",
+        ":service:android",
         ":llm:litertlm",
         ":app",
         ":mock-app",

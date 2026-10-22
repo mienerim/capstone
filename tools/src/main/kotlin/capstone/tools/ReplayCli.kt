@@ -3,11 +3,11 @@ package capstone.tools
 import capstone.gate.GatePolicy
 import capstone.scenarios.MockKorail
 import capstone.scenarios.MockKorailFlow
-import capstone.tools.replay.ReplayFormatException
+import capstone.snapshot.ReplayFormatException
+import capstone.snapshot.SnapshotJsonl
 import capstone.tools.replay.Outcome
 import capstone.tools.replay.ReplayHarness
 import capstone.tools.replay.Scenario
-import capstone.tools.replay.SnapshotJsonl
 import capstone.tools.replay.SnapshotPool
 import java.io.File
 import kotlin.system.exitProcess

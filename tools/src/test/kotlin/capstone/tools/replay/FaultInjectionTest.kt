@@ -1,18 +1,19 @@
 package capstone.tools.replay
 
+import capstone.agent.Screens
 import capstone.gate.BlockReason
 import capstone.gate.ExecResult
 import capstone.gate.GatePolicy
-import capstone.agent.Screens
 import capstone.scenarios.MockKorail
 import capstone.scenarios.MockKorailFlow
-import org.junit.jupiter.api.Assertions.assertThrows
-import org.junit.jupiter.api.Test
+import capstone.snapshot.ReplayFormatException
 import kotlin.test.assertEquals
 import kotlin.test.assertIs
 import kotlin.test.assertNotEquals
 import kotlin.test.assertNotNull
 import kotlin.test.assertTrue
+import org.junit.jupiter.api.Assertions.assertThrows
+import org.junit.jupiter.api.Test
 
 /** D36 재생기 결함 주입 7종: 관측이 어떻게 바뀌는지(장치), 그리고 실제 gate·러너가 어떻게 반응하는지(하니스). */
 class FaultInjectionTest {

@@ -1,19 +1,23 @@
-package capstone.tools.replay
+package capstone.snapshot
 
 import capstone.gate.Bounds
 import capstone.gate.WindowType
 import org.junit.jupiter.api.Test
+import java.io.File
 import org.junit.jupiter.api.Assertions.assertThrows
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
 import kotlin.test.assertNull
 import kotlin.test.assertTrue
 
+// 목업 픽스처는 tools/fixtures에 하나만 둔다(build.gradle.kts가 경로를 넘긴다).
+private val mockJsonl = File(System.getProperty("capstone.fixtures") ?: "../tools/fixtures", "mock/mock-korail.jsonl")
+
 class SnapshotJsonlTest {
 
     @Test
     fun `목업 픽스처 5장을 읽는다`() {
-        val recs = SnapshotJsonl.read(Fixtures.mockJsonl)
+        val recs = SnapshotJsonl.read(mockJsonl)
         assertEquals(
             listOf("mock_s1_popup", "mock_s1_search", "mock_s2_results", "mock_s3_seat", "mock_s4_payment"),
             recs.map { it.snapId },
@@ -29,7 +33,7 @@ class SnapshotJsonlTest {
 
     @Test
     fun `인코드-디코드 왕복 후 트리와 treeHash가 같다`() {
-        for (r in SnapshotJsonl.read(Fixtures.mockJsonl)) {
+        for (r in SnapshotJsonl.read(mockJsonl)) {
             val back = SnapshotJsonl.decodeLine(SnapshotJsonl.encodeLine(r))
             assertEquals(r, back, r.snapId)
             assertEquals(
@@ -99,11 +103,5 @@ class SnapshotJsonlTest {
         for ((name, line) in cases) {
             assertThrows(ReplayFormatException::class.java, { SnapshotJsonl.decodeLine(line, 1) }, name)
         }
-    }
-
-    @Test
-    fun `같은 snap_id가 두 번이면 풀 생성 실패`() {
-        val r = SnapshotJsonl.decodeLine("""{"v":0,"snap_id":"d","windows":[]}""")
-        assertThrows(ReplayFormatException::class.java) { SnapshotPool(listOf(r, r)) }
     }
 }
