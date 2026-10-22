@@ -6,3 +6,8 @@ plugins {
 dependencies {
     api(project(":gate:core"))
 }
+
+// 테스트만 실제 실행 경로(GatedExecutor)를 끼운다. main 코드는 gate-exec를 볼 수 없다.
+dependencies {
+    testImplementation(project(":gate:exec"))
+}
