@@ -1,0 +1,26 @@
+name: CI (JVM)
+
+on:
+  push:
+    branches: [main, "claude/**"]
+  pull_request:
+
+# D37: CI는 JVM 테스트만. 호스티드 에뮬레이터는 느리고 불안정해서 쓰지 않는다.
+jobs:
+  jvm-test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+      - uses: gradle/actions/setup-gradle@v4
+      # 러너에 ANDROID_HOME이 있어도 Android 모듈은 빼고 순수 Kotlin 모듈만 빌드·테스트한다.
+      - run: ./gradlew -Pcapstone.android=false test --stacktrace
+      - if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-reports
+          path: "**/build/reports/tests/"

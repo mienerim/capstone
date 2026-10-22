@@ -1,0 +1,18 @@
+capstone — 고령층 음성 요청 기반 온디바이스 앱 대행 에이전트
+Copyright 2026 캡스톤 팀
+
+이 저장소 코드는 Apache License 2.0(LICENSE)을 따른다.
+
+아래 프로젝트는 구조·필드 설계만 참고했고 코드는 복사하지 않았다(D26·D38). 모두 Apache-2.0.
+- android/platform-samples (samples/accessibility): 접근성 서비스 선언·XML 구조
+  https://github.com/android/platform-samples
+- google-deepmind/android_env (accessibilityforwarder, proto/a11y): 노드 스냅샷 필드 구성
+  https://github.com/google-deepmind/android_env
+- google-ai-edge/LiteRT-LM (kotlin/, getting_started): Engine/Conversation 초기화 순서
+  https://github.com/google-ai-edge/LiteRT-LM
+- k2-fsa/sherpa-onnx (android/): STT 폴백 데모 구조(도입 시)
+  https://github.com/k2-fsa/sherpa-onnx
+
+복사 금지(라이선스): DroidRun Portal(AGPL-3.0), blurr.
+의존 라이브러리: com.google.ai.edge.litertlm:litertlm-android(Apache-2.0), Kotlin 표준 라이브러리, JUnit 5(EPL-2.0, 테스트 전용).
+모델 파일(Gemma 3n E2B)은 저장소에 포함하지 않으며 Gemma 이용 약관을 따른다.

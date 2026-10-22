@@ -1,0 +1,29 @@
+# Gradle / IDE
+.gradle/
+build/
+local.properties
+.idea/
+*.iml
+.kotlin/
+captures/
+.externalNativeBuild/
+.cxx/
+
+# 모델·대용량 (D40: 모델은 adb push, 저장소에 넣지 않음)
+*.litertlm
+*.task
+*.tflite
+*.onnx
+*.bin
+*.gguf
+models/
+
+# 실기기 덤프 원본 (마스킹된 픽스처만 tools/src/test/resources 등에 커밋, D34)
+dumps/raw/
+*.dump.jsonl
+
+# 비밀
+*.keystore
+*.jks
+.env
+secrets.properties
