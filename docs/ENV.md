@@ -39,6 +39,17 @@ $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager "platform-tools" "platforms;an
 | 로케일 | `LANG` 미설정(POSIX). 한글 클래스 파일명 주의(DECISIONS-IMPL I-25) |
 | 결과 | 순수 Kotlin 모듈 테스트 81개 통과(gate 49 + tools 23 + agent-core 9), Android 모듈 미빌드 |
 
+## 2026-10-23 (3회차)
+
+| 항목 | 결과 |
+| --- | --- |
+| JDK | 새 컨테이너, apt `openjdk-17-jdk-headless`(apt-get update 뒤) 재설치 |
+| Gradle wrapper | 8.14.3 배포본 새로 받음(services.gradle.org 접근 가능) |
+| Maven Central | 첫 해석에서 429 1회 → `--max-workers=1` 재시도로 통과 |
+| dl.google.com | 확인 생략(2회차까지 계속 403). Android 모듈 미빌드 |
+| 로케일 | `LANG=C.UTF-8`로 실행 |
+| 결과 | 순수 Kotlin 모듈 테스트 104개 통과(gate 49 + tools 25 + agent-core 30) |
+
 ## 팀 PC (10-26 기록)
 
 | 항목 | A | B | C |

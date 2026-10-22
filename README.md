@@ -18,10 +18,10 @@
 | --- | --- | --- | --- |
 | `gate/core` | 순수 Kotlin | 정지 게이트 판정 `check`/`checkAfter` → `Allow`/`Block(reason)`, UiTree 스냅샷 모델, 증명 로그(JSONL) | B |
 | `gate/exec` | 순수 Kotlin | 유일한 `ActionExecutor` 구현. `RawActuator`(service가 구현) 호출·CLICK 실패 시 중심 탭 1회 폴백 | B |
-| `agent-core` | 순수 Kotlin | 화면 분류기(`ScreenClassifier`)·최소 DSL·상태머신(HANDOFF·ASK_USER·PAUSED_FOR_USER, 예정). **gate API에만 의존** | B |
+| `agent-core` | 순수 Kotlin | 화면 분류기(`ScreenClassifier`)·최소 DSL(`Flow`: click/type/wait_for/back/expect/ask/finish)·상태머신(`ScenarioRunner`: RUN·HANDOFF·ASK_USER·PAUSED_FOR_USER, 복구 사다리). **gate API(`ActionExecutor`)에만 의존** | B |
 | `llm/core` | 순수 Kotlin | 슬롯 스키마 v1·검증기·`LlmRunner` 인터페이스·워치독 | C |
 | `llm/litertlm` | Android | LiteRT-LM 어댑터(`litertlm-android` 0.18.0 고정) | C |
-| `app-scenarios` | 순수 Kotlin | 앱별 화면 서명·시나리오(목업 `MockKorail`, 코레일+는 10-27 덤프 뒤) | A |
+| `app-scenarios` | 순수 Kotlin | 앱별 화면 서명·시나리오(목업 `MockKorail`·`MockKorailFlow`, 코레일+는 10-27 덤프 뒤) | A |
 | `service` | Android | AccessibilityService, 노드 덤퍼, raw `performAction`/`dispatchGesture` | A |
 | `app` | Android | 데모 앱: 고지·동의, 버튼/음성 입력, 고정 알림, 모듈 조립 | C |
 | `mock-app` | Android | 코레일+ 흉내 4화면(S1 검색/S2 결과/S3 좌석+예매하기/S4 결제) + 변형 스위치 | C |
