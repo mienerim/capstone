@@ -37,7 +37,7 @@ $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager "platform-tools" "platforms;an
 | Maven Central | 429 반복 → `--max-workers=1` + 30초 간격 재시도로 통과 |
 | dl.google.com / maven.google.com | **여전히 차단(403)**. maven.google.com은 dl.google.com으로 리다이렉트되어 같이 막힘 |
 | 로케일 | `LANG` 미설정(POSIX). 한글 클래스 파일명 주의(DECISIONS-IMPL I-25) |
-| 결과 | 순수 Kotlin 모듈 테스트 69개 통과, Android 모듈 미빌드 |
+| 결과 | 순수 Kotlin 모듈 테스트 81개 통과(gate 49 + tools 23 + agent-core 9), Android 모듈 미빌드 |
 
 ## 팀 PC (10-26 기록)
 
