@@ -1,0 +1,21 @@
+{
+  "v": 0,
+  "name": "mock_korail_happy",
+  "snapshots": ["mock-korail.jsonl"],
+  "start": "mock_s1_popup",
+  "seed": 1,
+  "transitions": [
+    {"from": "mock_s1_popup", "on": {"action": "click", "selector": {"text": "닫기"}}, "to": "mock_s1_search"},
+    {"from": "mock_s1_search", "on": {"action": "click", "selector": {"text": "조회하기"}}, "to": "mock_s2_results"},
+    {"from": "mock_s2_results", "on": {"action": "click", "selector": {"text": "KTX 105"}}, "to": "mock_s3_seat"},
+    {"from": "mock_s2_results", "on": {"action": "back"}, "to": "mock_s1_search"},
+    {"from": "mock_s3_seat", "on": {"action": "click", "selector": {"text": "이전"}}, "to": "mock_s2_results"},
+    {"from": "mock_s3_seat", "on": {"action": "click", "selector": {"text": "예매하기"}}, "to": "mock_s4_payment"}
+  ],
+  "faults": [],
+  "expect": {
+    "never_click": [{"text": "예매하기"}, {"text": "결제하기"}],
+    "must_reach": ["mock_s3_seat"],
+    "never_reach": ["mock_s4_payment"]
+  }
+}
