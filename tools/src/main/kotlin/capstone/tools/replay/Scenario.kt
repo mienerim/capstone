@@ -60,22 +60,70 @@ enum class ReplayAction(val wire: String) {
 data class Transition(val from: String, val action: ReplayAction, val selector: Selector?, val to: String)
 
 /**
- * 결정론적 결함(D34 '전이 + 결함 주입'). [probability] < 1이면 시나리오 seed의 난수로 정한다.
- * ④에서 7종으로 늘린다. 지금은 재생기 자체를 검증할 최소 3종.
+ * 시드 결함(D34 '전이 + 결함 주입', D36 '재생기 결함 주입 7종'). [probability] < 1이면 시나리오 seed의 난수로 정한다.
+ * [onSnap]은 액션을 받은 스냅샷(from) 기준이다.
+ *
+ * D36 7종 = [EmptyAfterAction](노드 0)·[NodeDrop](70% 삭제)·[Skeleton]·[PackageChange]·[SignatureDamage]·
+ * [ScreenshotError]·[StaleCapture](이벤트 순서). [ClickFails]는 실행 경로 시험용으로 따로 둔다.
+ * 클릭 실패를 뺀 나머지는 액션 직후 [captures]번의 capture에만 걸리는 일시 결함이다(DECISIONS-IMPL I-35).
  */
 sealed interface Fault {
     val onSnap: String?
     val times: Int
     val probability: Double
 
+    /** 로그·통계에 쓰는 이름(시나리오 JSON의 kind와 같음). */
+    val kind: String
+
     /** raw click(중심 탭 포함)이 false를 돌려준다: 앱이 클릭을 안 받는 경우. */
-    data class ClickFails(override val onSnap: String? = null, override val times: Int = 1, override val probability: Double = 1.0) : Fault
+    data class ClickFails(override val onSnap: String? = null, override val times: Int = 1, override val probability: Double = 1.0) : Fault {
+        override val kind: String get() = "click_fails"
+    }
 
-    /** 액션 직후 capture가 루트 없는 창을 준다: 로딩 중 빈 트리(T9·D35). */
-    data class EmptyAfterAction(override val onSnap: String? = null, override val times: Int = 1, override val probability: Double = 1.0) : Fault
+    /** 액션 직후 화면을 바꾸는 결함. 상태 전이는 그대로 일어나고 보이는 트리만 바뀐다. */
+    sealed interface CaptureFault : Fault {
+        /** 결함이 걸리는 연속 capture 수. */
+        val captures: Int
+    }
 
-    /** 액션 직후 capture에 스크린샷 오류 코드를 붙인다(D35, 6=SECURE_WINDOW). */
-    data class ScreenshotError(val code: Int, override val onSnap: String? = null, override val times: Int = 1, override val probability: Double = 1.0) : Fault
+    /** ① 노드 0: capture가 루트 없는 창을 준다(로딩 중 빈 트리, T9·D35). */
+    data class EmptyAfterAction(override val onSnap: String? = null, override val times: Int = 1, override val probability: Double = 1.0, override val captures: Int = 1) : CaptureFault {
+        override val kind: String get() = "empty_after_action"
+    }
+
+    /** ② 노드 [fraction] 삭제: 루트 외 노드를 서브트리째 지운다(창 일부만 읽힌 상태, 급감 T10). */
+    data class NodeDrop(val fraction: Double = 0.7, override val onSnap: String? = null, override val times: Int = 1, override val probability: Double = 1.0, override val captures: Int = 1) : CaptureFault {
+        override val kind: String get() = "node_drop"
+    }
+
+    /** ③ 스켈레톤: 구조·id·bounds는 그대로, text·desc·hint·state_desc·pane_title이 빈 로딩 화면. */
+    data class Skeleton(override val onSnap: String? = null, override val times: Int = 1, override val probability: Double = 1.0, override val captures: Int = 1) : CaptureFault {
+        override val kind: String get() = "skeleton"
+    }
+
+    /** ④ 패키지 변경: 포그라운드 앱 창의 패키지가 [pkg]로 바뀐다(예상 밖 앱 전환, D35 ③). */
+    data class PackageChange(val pkg: String = DEFAULT_FOREIGN_PKG, override val onSnap: String? = null, override val times: Int = 1, override val probability: Double = 1.0, override val captures: Int = 1) : CaptureFault {
+        override val kind: String get() = "package_change"
+    }
+
+    /** ⑤ 서명 훼손: viewId를 난독화 이름으로 바꾸고, [text]가 있으면 그 텍스트도 지운다(앱 업데이트, D35 ④). */
+    data class SignatureDamage(val text: String? = null, override val onSnap: String? = null, override val times: Int = 1, override val probability: Double = 1.0, override val captures: Int = 1) : CaptureFault {
+        override val kind: String get() = "signature_damage"
+    }
+
+    /** ⑥ 스크린샷 오류 코드(D35 ⑤, 6=SECURE_WINDOW). */
+    data class ScreenshotError(val code: Int, override val onSnap: String? = null, override val times: Int = 1, override val probability: Double = 1.0, override val captures: Int = 1) : CaptureFault {
+        override val kind: String get() = "screenshot_error"
+    }
+
+    /** ⑦ 이벤트 순서: 화면은 이미 넘어갔는데 capture가 액션 전 트리를 준다(창 변경 이벤트가 늦게 도착). */
+    data class StaleCapture(override val onSnap: String? = null, override val times: Int = 1, override val probability: Double = 1.0, override val captures: Int = 1) : CaptureFault {
+        override val kind: String get() = "stale_capture"
+    }
+
+    companion object {
+        const val DEFAULT_FOREIGN_PKG: String = "com.sec.android.app.launcher"
+    }
 }
 
 data class Expectations(
@@ -128,10 +176,21 @@ data class Scenario(
                 val times = fo.int("times") ?: 1
                 val p = (fo["p"] as? JsonPrimitive)?.doubleOrNull ?: 1.0
                 if (p !in 0.0..1.0) throw ReplayFormatException("$where: faults[$i].p 범위 밖")
+                val caps = fo.int("captures") ?: 1
+                if (times < 1 || caps < 1) throw ReplayFormatException("$where: faults[$i] times·captures는 1 이상")
                 when (val kind = fo.str("kind")) {
                     "click_fails" -> Fault.ClickFails(snap, times, p)
-                    "empty_after_action" -> Fault.EmptyAfterAction(snap, times, p)
-                    "screenshot_error" -> Fault.ScreenshotError(fo.int("code") ?: 6, snap, times, p)
+                    "empty_after_action", "node_zero" -> Fault.EmptyAfterAction(snap, times, p, caps)
+                    "node_drop" -> {
+                        val frac = (fo["fraction"] as? JsonPrimitive)?.doubleOrNull ?: 0.7
+                        if (frac !in 0.0..1.0) throw ReplayFormatException("$where: faults[$i].fraction 범위 밖")
+                        Fault.NodeDrop(frac, snap, times, p, caps)
+                    }
+                    "skeleton" -> Fault.Skeleton(snap, times, p, caps)
+                    "package_change" -> Fault.PackageChange(fo.str("pkg") ?: Fault.DEFAULT_FOREIGN_PKG, snap, times, p, caps)
+                    "signature_damage" -> Fault.SignatureDamage(fo.str("text"), snap, times, p, caps)
+                    "screenshot_error" -> Fault.ScreenshotError(fo.int("code") ?: 6, snap, times, p, caps)
+                    "stale_capture", "event_order" -> Fault.StaleCapture(snap, times, p, caps)
                     else -> throw ReplayFormatException("$where: 알 수 없는 결함 '$kind'")
                 }
             }

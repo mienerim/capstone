@@ -71,6 +71,7 @@ class ReplayDevice(
     private var clock = 0L
     private var step = 0
     private var pendingCapture: ((Snapshot) -> Snapshot)? = null
+    private var pendingLeft = 0
 
     private val _log = mutableListOf<ReplayLogEntry>()
     private val _reached = linkedSetOf(scenario.start)
@@ -86,14 +87,14 @@ class ReplayDevice(
     // ---- SnapshotSource ----
 
     override fun capture(): Snapshot {
-        val base = current.snapshot.copy(
-            timestampMs = clock,
-            screen = if (oracleScreens) current.meta.screenLabel else null,
-        )
-        val fault = pendingCapture
-        pendingCapture = null
-        return fault?.invoke(base) ?: base
+        val base = view(current)
+        val fault = pendingCapture?.takeIf { pendingLeft > 0 } ?: return base
+        if (--pendingLeft == 0) pendingCapture = null
+        return fault(base)
     }
+
+    private fun view(rec: RecordedSnapshot): Snapshot =
+        rec.snapshot.copy(timestampMs = clock, screen = if (oracleScreens) rec.meta.screenLabel else null)
 
     // ---- RawActuator ----
 
@@ -118,6 +119,9 @@ class ReplayDevice(
         clock += stepMs
         val from = current
         val notes = mutableListOf<String>()
+        // 일시 결함은 '액션 직후'에만 건다. 다음 액션이 오면 남은 것은 버린다.
+        pendingCapture = null
+        pendingLeft = 0
 
         var window: UiWindow? = null
         var key: String? = null
@@ -159,20 +163,26 @@ class ReplayDevice(
             notes += "no_transition"
         }
 
-        armCaptureFaults(from.snapId, notes)
+        armCaptureFaults(from, notes)
         return logged(from, wire, key, label, true, t?.to, notes)
     }
 
-    private fun armCaptureFaults(fromSnap: String, notes: MutableList<String>) {
-        when {
-            consume<Fault.EmptyAfterAction>(fromSnap) -> {
-                notes += "fault:empty_after_action"
-                pendingCapture = { s -> s.copy(windows = s.windows.map { w -> if (w == s.foregroundAppWindow) w.copy(root = null) else w }) }
+    private fun armCaptureFaults(from: RecordedSnapshot, notes: MutableList<String>) {
+        val f = scenario.faults.filterIsInstance<Fault.CaptureFault>().firstOrNull { tryConsume(it, from.snapId) } ?: return
+        notes += if (f is Fault.ScreenshotError) "fault:${f.kind}:${f.code}" else "fault:${f.kind}"
+        pendingLeft = f.captures
+        pendingCapture = when (f) {
+            is Fault.EmptyAfterAction -> { s -> s.mapForeground { it.copy(root = null) } }
+            is Fault.NodeDrop -> {
+                // 난수는 결함을 걸 때 한 번만 뽑는다: 같은 결함 동안 매 capture가 같은 잘린 트리를 보인다.
+                val drop = mutableMapOf<Int, UiWindow>()
+                ({ s -> s.mapForeground { w -> drop.getOrPut(w.id) { w.dropNodes(f.fraction, random) } } })
             }
-            else -> scenario.faults.filterIsInstance<Fault.ScreenshotError>().firstOrNull { tryConsume(it, fromSnap) }?.let { f ->
-                notes += "fault:screenshot_error:${f.code}"
-                pendingCapture = { s -> s.copy(screenshotError = f.code) }
-            }
+            is Fault.Skeleton -> { s -> s.mapForeground { w -> w.copy(root = w.root?.map(::skeleton)) } }
+            is Fault.PackageChange -> { s -> s.mapForeground { it.copy(packageName = f.pkg) } }
+            is Fault.SignatureDamage -> { s -> s.mapForeground { w -> w.copy(root = w.root?.map { damage(it, f.text) }) } }
+            is Fault.ScreenshotError -> { s -> s.copy(screenshotError = f.code) }
+            is Fault.StaleCapture -> { _ -> view(from) }
         }
     }
 
@@ -210,3 +220,28 @@ internal fun RecordedSnapshot.withText(windowId: Int, key: String, text: String)
         if (w.id == windowId && w.root != null) w.copy(root = replace(w.root!!, path)) else w
     }))
 }
+
+private fun Snapshot.mapForeground(f: (UiWindow) -> UiWindow): Snapshot {
+    val fg = foregroundAppWindow ?: return this
+    return copy(windows = windows.map { if (it.id == fg.id) f(it) else it })
+}
+
+/** 노드와 모든 자손에 [f]를 적용한 사본(자식은 f 적용 전 원본에서 가져온다). */
+internal fun UiNode.map(f: (UiNode) -> UiNode): UiNode = f(this).copy(children = children.map { it.map(f) })
+
+/** 루트 외 노드를 각각 [fraction] 확률로 서브트리째 지운다. 루트가 남아야 '노드 0'과 구분된다. */
+internal fun UiWindow.dropNodes(fraction: Double, random: Random): UiWindow {
+    fun prune(n: UiNode): UiNode = n.copy(children = n.children.filter { random.nextDouble() >= fraction }.map(::prune))
+    return copy(root = root?.let(::prune))
+}
+
+private fun skeleton(n: UiNode): UiNode = n.copy(text = null, contentDescription = null, hint = null, stateDescription = null, paneTitle = null)
+
+/** viewId 이름을 난독화 이름(x + 해시)으로 바꾼다. 같은 이름은 같은 결과라 트리 안 관계는 유지된다. */
+private fun damage(n: UiNode, text: String?): UiNode = n.copy(
+    viewId = n.viewId?.let { id ->
+        val name = id.substringAfter(":id/")
+        id.removeSuffix(name) + "x" + (name.hashCode() and 0xffff).toString(16)
+    },
+    text = if (text != null && n.text == text) null else n.text,
+)
