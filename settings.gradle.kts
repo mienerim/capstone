@@ -35,6 +35,7 @@ include(
     ":llm:core",
     ":app-scenarios",
     ":snapshot",
+    ":service:core",
     ":tools",
 )
 

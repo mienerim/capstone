@@ -15,7 +15,8 @@ android {
 
 kotlin { jvmToolchain(17) }
 
-// AccessibilityService와 raw performAction/dispatchGesture(RawActuator 구현). 밖으로는 NodeRef만(D36).
+// AccessibilityService와 raw performAction/dispatchGesture. 판단 없는 로직은 service/core(JVM 테스트)에 있고,
+// 여기서는 AccessibilityNodeInfo를 A11yNode로 감싸기만 한다. 밖으로는 NodeRef만(D36).
 dependencies {
-    implementation(project(":gate:exec"))
+    api(project(":service:core"))
 }

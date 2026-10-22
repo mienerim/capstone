@@ -23,7 +23,7 @@ kotlin { jvmToolchain(17) }
 
 // 조립 모듈: service + gate + agent-core + llm + app-scenarios를 묶는다(D36).
 dependencies {
-    implementation(project(":service"))
+    implementation(project(":service:android"))
     implementation(project(":gate:exec"))
     implementation(project(":agent-core"))
     implementation(project(":app-scenarios"))

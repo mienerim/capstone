@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  isAccessibilityTool=false: 접근성 도구라고 신고하지 않는다(Play 정책상 도구가 아님). 그 대가로
+  isAccessibilityDataSensitive 노드는 보이지 않는다 — gate는 이를 빈 트리·HANDOFF로 처리한다(D2·D36).
+  flagIncludeNotImportantViews: 확정 버튼 위임(G5)을 보려면 '중요하지 않은' 컨테이너도 트리에 있어야 한다.
+  flagRetrieveInteractiveWindows: 팝업·키보드 창까지 창 목록으로 받는다(포그라운드 판정).
+  packageNames를 비워 두는 이유: 덤프 대상 제한은 DumpRecorder 허용목록, 조작 제한은 gate 허용목록이 맡는다.
+-->
+<accessibility-service xmlns:android="http://schemas.android.com/apk/res/android"
+    android:accessibilityEventTypes="typeWindowStateChanged|typeWindowsChanged|typeWindowContentChanged"
+    android:accessibilityFeedbackType="feedbackGeneric"
+    android:accessibilityFlags="flagReportViewIds|flagRetrieveInteractiveWindows|flagIncludeNotImportantViews"
+    android:canPerformGestures="true"
+    android:canRetrieveWindowContent="true"
+    android:canTakeScreenshot="true"
+    android:description="@string/a11y_service_description"
+    android:isAccessibilityTool="false"
+    android:notificationTimeout="100" />
