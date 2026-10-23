@@ -35,6 +35,8 @@ fun defaultFlowSlots(s: SlotsV1, today: LocalDate): Slots = buildMap {
 sealed interface AppScreen {
     data class Consent(val declined: Boolean = false) : AppScreen
     data class Home(val message: String? = null) : AppScreen
+    /** 발화 종료 ~ 복창 시작(D73). [asking]이면 '계속 기다릴까요?' 버튼 2개를 그린다. */
+    data class Waiting(val text: String, val asking: Boolean = false) : AppScreen
     data class AskSlot(val slot: SlotName, val question: String, val options: List<String>) : AppScreen
     data class Confirm(val text: String) : AppScreen
     /** 실행 중. [run]의 종류에 따라 버튼(AskUser 보기·계속·멈춤)을 그린다. */
@@ -57,11 +59,13 @@ class AppSession(
     private val scenarioFor: (SlotsV1) -> Scenario?,
     private val startRunner: (Flow, Slots) -> ScenarioRunner,
     private val nowMs: () -> Long = System::currentTimeMillis,
+    private val wait: WaitFeedback = WaitFeedback(),
 ) {
     private val consent = ConsentManager(store)
     private val limiter = DailyRunLimiter(store)
     private var slots: SlotsV1? = null
     private var parseFailures = 0
+    private var ticket = 0
 
     var runner: ScenarioRunner? = null
         private set
@@ -94,8 +98,61 @@ class AppSession(
     /** 요청을 받을 수 있는 화면인가(동의 전·실행 중에는 발화를 파서에 넘기지 않는다). */
     val acceptsRequest: Boolean get() = screen is AppScreen.Home || screen is AppScreen.Finished
 
-    /** 발화 파싱 결과(SlotParser.parse). */
-    fun onParsed(r: ParseResult) {
+    /**
+     * 발화가 끝나 파싱을 시작한다(D73 ①). 돌려준 번호를 [onParsed]에 그대로 넘긴다 —
+     * 안전 중단·'그만' 뒤에 늦게 온 결과는 번호가 달라 버린다.
+     */
+    fun beginParsing(): Int {
+        requireIdle()
+        wait.start(nowMs())
+        screen = AppScreen.Waiting(WaitFeedback.THINKING_TEXT)
+        return ++ticket
+    }
+
+    /**
+     * 대기 중 주기적으로(약 0.5초) 부른다. 새로 낼 신호를 돌려준다 — 앱이 확인음·필러 음성으로 바꾼다.
+     * 25초가 되면 화면을 처음으로 돌리고 결과를 버린다(D73 ④).
+     */
+    fun onWaitTick(): List<WaitCue> {
+        if (screen !is AppScreen.Waiting) return emptyList()
+        val cues = wait.poll(nowMs())
+        cues.forEach { c ->
+            screen = when (c) {
+                WaitCue.Thinking -> AppScreen.Waiting(WaitFeedback.THINKING_TEXT, wait.asking)
+                is WaitCue.Filler -> AppScreen.Waiting(c.text, wait.asking)
+                WaitCue.AskContinue -> AppScreen.Waiting(WaitFeedback.ASK_TEXT, asking = true)
+                WaitCue.Abort -> {
+                    ticket++
+                    AppScreen.Home(WaitFeedback.ABORT_TEXT)
+                }
+            }
+        }
+        return cues
+    }
+
+    /** '계속 기다릴게요'(true) / '그만할게요'(false). */
+    fun answerWait(keep: Boolean) {
+        val w = screen as? AppScreen.Waiting ?: return
+        if (keep) {
+            wait.keepWaiting()
+            screen = w.copy(asking = false)
+        } else {
+            wait.stop()
+            ticket++
+            screen = AppScreen.Home()
+        }
+    }
+
+    /**
+     * 발화 파싱 결과(SlotParser.parse). [parseTicket]은 [beginParsing]이 준 번호이고,
+     * 지금 기다리는 번호가 아니면 버린다(false). 번호 없이 부르면 대기 없이 바로 받는다(요청 화면에서만).
+     */
+    fun onParsed(r: ParseResult, parseTicket: Int? = null): Boolean {
+        if (parseTicket != null) {
+            if (screen !is AppScreen.Waiting || parseTicket != ticket) return false
+            wait.stop()
+            screen = AppScreen.Home()
+        }
         requireIdle()
         when (r) {
             is ParseResult.Ok -> {
@@ -116,6 +173,7 @@ class AppSession(
                 }
             }
         }
+        return true
     }
 
     /** [AppScreen.AskSlot]의 보기 하나를 골랐다. */
@@ -183,6 +241,10 @@ class AppSession(
 
     /** '처음으로'. 실행 중이면 먼저 멈춘다(러너를 버리면 더 제출하지 않는다). */
     fun reset(message: String? = null) {
+        if (screen is AppScreen.Waiting) {
+            wait.stop()
+            ticket++
+        }
         runner?.pauseForUser()
         runner = null
         slots = null

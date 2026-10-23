@@ -6,6 +6,8 @@ import android.app.ActivityManager
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.graphics.Typeface
+import android.media.AudioManager
+import android.media.ToneGenerator
 import android.os.Bundle
 import android.os.Handler
 import android.os.HandlerThread
@@ -27,6 +29,8 @@ import capstone.app.core.HelpMode
 import capstone.app.core.Onboarding
 import capstone.app.core.OnboardingScreen
 import capstone.app.core.Scenario
+import capstone.app.core.WaitCue
+import capstone.app.core.WaitFeedback
 import capstone.llm.ContextBudget
 import capstone.llm.GuardedGenerator
 import capstone.llm.Intent as SlotIntent
@@ -54,7 +58,7 @@ class MainActivity : Activity() {
     private val llmThread = HandlerThread("llm").also { it.start() }
     private val llm = Handler(llmThread.looper)
     private var parser: SlotParser? = null
-    private var busy = false
+    private val tone by lazy { ToneGenerator(AudioManager.STREAM_NOTIFICATION, 80) }
     private var wentToSettings = false
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -80,7 +84,7 @@ class MainActivity : Activity() {
             onboarding.onReturnedFromSettings()
             render()
         } else if (onboarding.screen == OnboardingScreen.Protected) {
-            // 분기 B(D68): 서비스 활성은 매번 다시 본다. 우리가 AP를 끄라고 하지는 않는다.
+            // 분기 B(D68 ③·D71): AP 상태는 매번 다시 본다. 우리가 AP를 끄라고 하지는 않는다.
             onboarding.recheckProtection()
             render()
         }
@@ -103,6 +107,8 @@ class MainActivity : Activity() {
     override fun onDestroy() {
         host.close()
         notice.hide()
+        main.removeCallbacks(waitTick)
+        tone.release()
         llm.post { parser = null }
         llmThread.quitSafely()
         super.onDestroy()
@@ -136,6 +142,13 @@ class MainActivity : Activity() {
         val content: List<View> = if (!onboarding.isDone) onboardingViews(onboarding.screen) else when (val s = session.screen) {
             is AppScreen.Consent -> consent(s)
             is AppScreen.Home -> home(s)
+            is AppScreen.Waiting -> buildList {
+                add(title(s.text))
+                if (s.asking) {
+                    add(big(WaitFeedback.KEEP) { session.answerWait(true); render() })
+                    add(big(WaitFeedback.CANCEL) { session.answerWait(false); render() })
+                }
+            }
             is AppScreen.AskSlot -> listOf(title(s.question)) + s.options.map { o -> big(o) { session.choose(o); render() } }
             is AppScreen.Confirm -> listOf(
                 title(s.text),
@@ -233,7 +246,7 @@ class MainActivity : Activity() {
             setTextSize(TypedValue.COMPLEX_UNIT_SP, 24f)
         }
         add(input)
-        add(big(if (busy) "알아듣는 중…" else "이렇게 찾아 주세요") { if (!busy) parse(input.text.toString()) })
+        add(big("이렇게 찾아 주세요") { parse(input.text.toString()) })
         add(big("버튼으로 찾기") { session.startWithButtons(); render() })
     }
 
@@ -252,7 +265,7 @@ class MainActivity : Activity() {
     // ---- 동작 ----
 
     private fun startRun() {
-        // D62·D69 ⑤: 알림·접근성이 없거나 AP 켜짐 + 서비스 꺼짐(D68)이면 대행을 시작하지 않고 이 화면에서 안내한다.
+        // D62·D69 ⑤: 알림·접근성이 없거나 AP 켜짐(D71)이면 대행을 시작하지 않고 이 화면에서 안내한다.
         onboarding.startBlocker()?.let {
             session.reset(it)
             render()
@@ -269,15 +282,22 @@ class MainActivity : Activity() {
         render()
     }
 
+    // Android 16: BAL_ALLOW_TOKEN 추정·NEW_TASK 필수 / Android 17: 변경 언급 없음, 실측 필요 (D72)
+    // 기본 복귀 경로는 진행 알림·앱 아이콘(D69)이고, 이 호출이 막혀도 그 경로로 돌아올 수 있다.
     private fun bringToFront() {
         startActivity(Intent(this, MainActivity::class.java).addFlags(Intent.FLAG_ACTIVITY_REORDER_TO_FRONT))
     }
 
-    /** LLM은 작업 스레드에서(콜드 로드 수 초). 모델이 없으면 다시 말해 달라는 쪽으로 간다(→ 2회 뒤 버튼). */
+    /**
+     * LLM은 작업 스레드에서(콜드 로드 수 초). 모델이 없으면 다시 말해 달라는 쪽으로 간다(→ 2회 뒤 버튼).
+     * 기다리는 동안 D73 대기 피드백(확인음·'생각 중'·필러·'계속 기다릴까요?'·25초 안전 중단)을 낸다.
+     * 필러는 지금 글자만 — 음성(TTS)은 STT와 함께 W03 뒤에 붙인다.
+     * D13 정정: STT를 붙이면 8GB 기기는 STT 종료·언로드 직후에 이 파싱(=엔진 initialize)을 시작한다. 선로드 금지.
+     */
     private fun parse(text: String) {
         if (!session.acceptsRequest) return
-        busy = true
-        render()
+        val ticket = session.beginParsing()
+        onWaitTick()
         llm.post {
             val r = try {
                 (parser ?: newParser())?.parse(text) ?: ParseResult.AskAgain(1, "no_model")
@@ -285,11 +305,21 @@ class MainActivity : Activity() {
                 ParseResult.AskAgain(1, "runner_error")
             }
             main.post {
-                busy = false
-                if (session.acceptsRequest) session.onParsed(r)
+                // 안전 중단·'그만' 뒤에 온 결과는 AppSession이 번호로 버린다.
+                session.onParsed(r, ticket)
+                main.removeCallbacks(waitTick)
                 render()
             }
         }
+    }
+
+    private val waitTick = Runnable { onWaitTick() }
+
+    private fun onWaitTick() {
+        val cues = session.onWaitTick()
+        if (WaitCue.Thinking in cues) tone.startTone(ToneGenerator.TONE_PROP_ACK, 150)
+        if (cues.isNotEmpty()) render()
+        if (session.screen is AppScreen.Waiting) main.postDelayed(waitTick, WAIT_TICK_MS)
     }
 
     private fun newParser(): SlotParser? {
@@ -335,6 +365,7 @@ class MainActivity : Activity() {
     companion object {
         const val EXTRA_PAUSE = "pause"
         private const val REQ_NOTIFICATIONS = 1
+        private const val WAIT_TICK_MS = 500L
 
         /** D40: adb push 위치(getExternalFilesDir) 또는 run-as 폴백(filesDir). */
         const val MODEL_FILE = "gemma-3n-E2B-it-int4.litertlm"

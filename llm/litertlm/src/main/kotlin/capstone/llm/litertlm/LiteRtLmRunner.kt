@@ -41,7 +41,11 @@ class LiteRtLmRunner(
 
     @Volatile private var current: Conversation? = null
 
-    /** 콜드 로드는 수 초 걸린다(공식 '최대 약 10초'). 메인 스레드에서 부르지 않는다. */
+    /**
+     * 콜드 로드는 수 초 걸린다(공식 '최대 약 10초'). 메인 스레드에서 부르지 않는다.
+     * D13 정정: 8GB 기기는 STT 종료·언로드 직후에 처음 부른다(발화 중 선로드 금지, W03에서 동시 피크 PSS·LMK 0회가
+     * 확인된 기기만 예외). 콜드 로드 구간은 앱의 대기 피드백(D73)이 메운다.
+     */
     @Synchronized
     fun ensureLoaded(): Engine = engine ?: Engine(
         // maxNumTokens = KV 캐시 크기라 8GB 기기 메모리에 직접 걸린다(W04). 입력이 이 값 이상이면 Prefill 에러(D65).
