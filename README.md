@@ -25,11 +25,12 @@
 | `service/core` | 순수 Kotlin | 트리 캡처(`TreeCapture`, 한도 초과 시 빈 트리)·`FrameActuator`(`RawActuator`: treeHash·refresh 확인 뒤 실행)·덤프 마스킹/기록(`DumpRecorder`) | A |
 | `service/android` | Android | `DumperService`(AccessibilityService, 화면 변경 시 `filesDir/dump.jsonl`)·노드 어댑터·제스처, **미빌드** | A |
 | `snapshot` | 순수 Kotlin | 저장 트리 JSONL v0 코덱(덤퍼가 쓰고 재생기가 읽음) | B |
-| `app` | Android | 데모 앱: 고지·동의, 버튼/음성 입력, 고정 알림, 모듈 조립 | C |
+| `app-core` | 순수 Kotlin | 앱 흐름 판단: 첫 실행 고지·동의(D25)·D17 일일 한도·버튼/발화 → 슬롯 채우기 → 복창·확인 → 실행 안내(`AppSession`), 매니페스트 정책 테스트 | C |
+| `app` | Android | 데모 앱: `AppSession` 화면 그리기, 실행 조립(`AgentHost`: 서비스 → gate → 상태머신), 고정 알림, **미빌드** | C |
 | `mock-app` | Android | 코레일+ 흉내 4화면(S1 검색/S2 결과/S3 좌석+예매하기/S4 결제) + 변형 스위치([`mock-app/README.md`](mock-app/README.md)), **미빌드** | C |
 | `tools` | 순수 Kotlin | JSONL 재생기([`tools/README.md`](tools/README.md))·결함 주입 7종·n=20/60 하니스(Wilson 구간)·adb 스크립트(예정) | B |
 
-의존 방향: `app → {service/android, gate/exec, agent-core, app-scenarios, llm}`, `agent-core → gate/core`,
+의존 방향: `app → {app-core, service/android, gate/exec, agent-core, app-scenarios, llm}`, `app-core → {agent-core, llm/core}`, `agent-core → gate/core`,
 `service/android → service/core → {gate/exec, snapshot}`, `tools → snapshot`. agent-core는 service를 볼 수 없으므로 gate를 우회해 누를 방법이 없다.
 
 ## 빌드

@@ -92,6 +92,17 @@ adb push ./models/gemma-3n-E2B-it-int4.litertlm /sdcard/Android/data/capstone.ap
 - [ ] `LiteRtLmRunner`(llm/litertlm)를 AAR 실제 API에 맞게 고치고 컴파일(I-39)
 - [ ] 로드 1·2회차 시간, 첫 토큰 시간, 메모리 피크를 week1.csv에 기록
 
+## 4-1. 데모 앱 목업 연결 확인 (C, 시간이 남으면)
+
+목업 앱(`capstone.mock`)만 대상으로 한다. 코레일+는 건드리지 않는다.
+
+- [ ] `adb install -r app/build/outputs/apk/debug/app-debug.apk` → 첫 실행에 고지·동의 화면, '동의하고 시작' 뒤 알림 권한 요청
+- [ ] '버튼으로 찾기' → 서울 → 부산 → 내일 → 복창 문장 확인 → '네' → 목업 앱이 앞으로 오고 입력·조회가 진행
+- [ ] 열차 고르기는 우리 앱 화면 큰 버튼으로 묻는다(ASK_USER) → 고르면 목업 S3(좌석)에서 멈추고 요약 화면
+- [ ] 진행 중 알림 '멈춰' → 우리 화면으로 오고 '계속'/'그만하기'. 목업 S4(결제)에 도달하면 **M7 실패**로 기록
+- [ ] 증명 로그: `adb shell run-as capstone.app cat files/gate.jsonl | tail`
+- [ ] 동의 기록 초기화(다시 시험): `adb shell pm clear capstone.app`
+
 ## 5. 마무리
 
 - [ ] `docs/ENV.md` 팀 PC 표 채우기(OS·Android Studio·JDK·assembleDebug·litertlm 게시 여부)
