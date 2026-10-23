@@ -14,6 +14,7 @@ object Fixtures {
     val mockJsonl: File get() = File(dir, "mock/mock-korail.jsonl")
     val happy: File get() = File(dir, "mock/happy.json")
     val faults: File get() = File(dir, "mock/faults.json")
+    val srt: File get() = File(dir, "mock/srt.json")
 
     fun pool(): SnapshotPool = SnapshotPool.load(listOf(mockJsonl))
 }

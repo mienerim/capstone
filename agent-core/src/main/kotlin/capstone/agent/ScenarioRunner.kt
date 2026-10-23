@@ -216,7 +216,8 @@ class ScenarioRunner(
         is Step.Back -> acted && snap.screen == step.then
         is Step.WaitFor -> snap.screen == step.screen
         is Step.Finish -> snap.screen == step.on
-        is Step.Ask -> step.slot in slots
+        // 미리 채운 값(발화·CLI)도 그 화면의 보기에 있어야 한다. 없으면(SRT·매진·다른 화면 값) 다시 묻는다(I-57).
+        is Step.Ask -> step.slot in slots && (snap.screen != step.on || slots[step.slot] in askOptions(step, snap))
         is Step.Type -> snap.screen == step.on && typedValue(snap, step.target(slots))
             ?.let { it == norm(step.text(slots)) } == true
     }
@@ -249,8 +250,7 @@ class ScenarioRunner(
             }
             is Step.WaitFor -> await(setOf(step.screen), step.timeoutMs)
             is Step.Ask -> {
-                val w = snap.foregroundAppWindow ?: return true
-                val options = step.options(slots, w)
+                val options = askOptions(step, snap)
                 if (options.isEmpty()) {
                     stop("ask_no_options:${step.slot}")
                     return false
@@ -263,6 +263,9 @@ class ScenarioRunner(
         }
         return true
     }
+
+    private fun askOptions(step: Step.Ask, snap: Snapshot): List<String> =
+        snap.foregroundAppWindow?.let { step.options(slots, it) }.orEmpty()
 
     /** D17 조회 한도. 간격이 모자라면 기다린다(일시정지 요청은 그 사이에도 받는다). @return false면 정지했다. */
     private fun queryBudget(): Boolean {

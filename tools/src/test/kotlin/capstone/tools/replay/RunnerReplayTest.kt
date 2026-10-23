@@ -58,4 +58,26 @@ class RunnerReplayTest {
         // 클릭 실패는 gate-exec 폴백(중심 탭 1회)이 흡수한다.
         assertTrue(r.device.log.any { it.action == "tap_center" && it.ok })
     }
+
+    @Test
+    fun `결과에 SRT가 섞여도 보기에서 빠지고 SRT 행은 장치에 닿지 않는다`() {
+        val r = start(Fixtures.srt, slots)
+        val ask = assertIs<RunState.AskUser>(r.runner.run())
+        assertEquals(listOf("KTX 101", "KTX 105", "무궁화호 1201", "KTX 107"), ask.options)
+        r.runner.answer("KTX 105")
+        assertIs<RunState.Done>(r.runner.run())
+        val report = r.device.report()
+        assertTrue(report.passed, report.toString())
+    }
+
+    @Test
+    fun `미리 채운 열차가 SRT면 그대로 누르지 않고 보기로 다시 묻는다`() {
+        val r = start(Fixtures.srt, slots + (MockKorailFlow.SLOT_TRAIN to "SRT 301"))
+        val ask = assertIs<RunState.AskUser>(r.runner.run())
+        assertTrue("SRT 301" !in ask.options, ask.options.toString())
+        r.runner.answer("KTX 105")
+        assertIs<RunState.Done>(r.runner.run())
+        assertTrue(r.device.report().passed, r.device.report().toString())
+        assertTrue(r.device.log.none { it.label?.startsWith("SRT") == true }, r.device.log.toString())
+    }
 }

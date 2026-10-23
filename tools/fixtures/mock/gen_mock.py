@@ -1,4 +1,4 @@
-# 목업 합성 스냅샷 생성기. 사용: python3 tools/fixtures/mock/gen_mock.py tools/fixtures/mock/mock-korail.jsonl
+# 목업 합성 스냅샷 생성기. 사용: python3 tools/fixtures/mock/gen_mock.py tools/fixtures/mock/mock-korail.jsonl [tools/fixtures/mock/mock-korail-srt.jsonl]
 import json, sys
 PKG = "capstone.mock"
 def rid(x): return f"{PKG}:id/{x}"
@@ -27,10 +27,13 @@ def s1(popup=False):
                           button("닫기", [140,1150,940,1260], "btn_popup_close"), b=[100,760,980,1300], rid=rid("popup")))
     return frame(*body)
 
-def s2():
+def s2(srt=False):
     rows = []
     trains = [("KTX 101","06:00","08:40","예약가능"),("KTX 103","07:00","09:38","매진"),("KTX 105","08:00","10:41","예약가능"),
               ("무궁화호 1201","08:20","13:30","예약가능"),("KTX 107","09:00","11:39","예약가능"),("ITX-새마을 1001","09:30","14:10","예약가능")]
+    if srt:
+        # 안건 8: 결과에 SRT가 섞여 나오는 경우(코레일+ 실제 표기는 녹화로 확인, I-54). 보기에서 빠져야 한다.
+        trains = trains[:1] + [("SRT 301","06:30","08:50","예약가능")] + trains[1:5] + [("SRT 305","09:10","11:30","예약가능")]
     for i,(no,dep,arr,st) in enumerate(trains):
         top = 300 + i*260
         rows.append(group(text(no,[40,top+20,400,top+100]), text(f"{dep} → {arr}",[420,top+20,800,top+100]),
@@ -78,6 +81,12 @@ def snap(sid, label, root, ts):
 
 out=[snap("mock_s1_popup","POPUP_KNOWN",s1(True),0), snap("mock_s1_search","SEARCH_FORM",s1(),1000), snap("mock_s2_results","RESULT_LIST",s2(),2000),
      snap("mock_s3_seat","DETAIL",s3(),3000), snap("mock_s4_payment","PAYMENT_GATE",s4(),4000)]
-with open(sys.argv[1],"w",encoding="utf-8") as f:
-    f.write("// 목업 4화면(+공지 팝업) 합성 스냅샷. 실기기 덤프가 아니다. 생성: gen_mock.py (DECISIONS-IMPL I-22)\n")
-    for s in out: f.write(json.dumps(s, ensure_ascii=False, separators=(",",":"))+"\n")
+def write(path, header, snaps):
+    with open(path,"w",encoding="utf-8") as f:
+        f.write(header)
+        for s in snaps: f.write(json.dumps(s, ensure_ascii=False, separators=(",",":"))+"\n")
+
+write(sys.argv[1], "// 목업 4화면(+공지 팝업) 합성 스냅샷. 실기기 덤프가 아니다. 생성: gen_mock.py (DECISIONS-IMPL I-22)\n", out)
+if len(sys.argv) > 2:
+    write(sys.argv[2], "// 목업 결과 화면에 SRT가 섞인 변형(안건 8, I-54·I-57). 실기기 덤프가 아니다. 생성: gen_mock.py\n",
+          [snap("mock_s2_results_srt","RESULT_LIST",s2(srt=True),2000)])

@@ -56,6 +56,16 @@ class ScenarioRunnerTest {
     }
 
     @Test
+    fun `미리 채운 열차가 매진이면 누르지 않고 지금 화면의 보기로 다시 묻는다`() {
+        val h = Harness(slots = mapOf("origin" to "서울", "destination" to "부산", "train" to "KTX 101"))
+        val ask = assertIs<RunState.AskUser>(h.runner.run())
+        assertEquals(listOf("KTX 105", "KTX 107"), ask.options)
+        assertTrue(h.app.raw.none { "KTX 101" in it }, h.app.raw.toString())
+        h.runner.answer("KTX 105")
+        assertIs<RunState.Done>(h.runner.run())
+    }
+
+    @Test
     fun `조회 뒤 로딩(빈 트리)은 기다렸다 진행하고 HANDOFF로 가지 않는다`() {
         val h = Harness()
         h.app.on(Screens.SEARCH_FORM, "조회하기", Screens.RESULT_LIST, delayMs = 4_000)
