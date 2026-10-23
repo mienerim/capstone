@@ -72,6 +72,10 @@ data class RunnerConfig(
     /** 처음 1회 + 재시도 1회(복구 사다리 1단). */
     val maxAttempts: Int = 2,
     val maxPopupDismiss: Int = 2,
+    /** D17: 1건(한 번의 실행)당 조회 클릭 상한. 재시도로 다시 누른 것도 센다. */
+    val maxQueries: Int = 3,
+    /** D17: 조회 클릭 사이 최소 간격. 모자라면 기다렸다 누른다(D8 사람 같은 지연). */
+    val minQueryGapMs: Long = 3_000,
 )
 
 /**
@@ -97,6 +101,8 @@ class ScenarioRunner(
     private var lastScreen: String? = null
     private var resumeCheck: String? = null
     private var currentStep = 0
+    private var queries = 0
+    private var lastQueryAt: Long? = null
 
     @Volatile private var pauseRequested = false
 
@@ -219,7 +225,12 @@ class ScenarioRunner(
                     stop("flow_targets_confirm")
                     return false
                 }
+                if (step.query && !queryBudget()) return false
                 submit(snap, ActionRequest.Click(ref, fgPackage(snap), snap.screen)) ?: return false
+                if (step.query) {
+                    queries++
+                    lastQueryAt = clock.nowMs()
+                }
                 await(setOf(step.then), step.timeoutMs ?: config.stepTimeoutMs)
             }
             is Step.Type -> {
@@ -243,6 +254,20 @@ class ScenarioRunner(
                 return false
             }
             is Step.Finish -> Unit
+        }
+        return true
+    }
+
+    /** D17 조회 한도. 간격이 모자라면 기다린다(일시정지 요청은 그 사이에도 받는다). @return false면 정지했다. */
+    private fun queryBudget(): Boolean {
+        if (queries >= config.maxQueries) {
+            stop("limit:queries")
+            return false
+        }
+        val last = lastQueryAt ?: return true
+        while (clock.nowMs() - last < config.minQueryGapMs) {
+            checkPause()
+            clock.sleep(minOf(config.pollMs, config.minQueryGapMs - (clock.nowMs() - last)))
         }
         return true
     }

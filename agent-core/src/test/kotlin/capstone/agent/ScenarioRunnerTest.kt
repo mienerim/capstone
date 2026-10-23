@@ -79,6 +79,30 @@ class ScenarioRunnerTest {
         assertIs<RunState.AskUser>(h.runner.run())
     }
 
+    private val queryOnly = flow("query", setOf(PKG)) {
+        click(Screens.SEARCH_FORM, then = Screens.RESULT_LIST, target = NodeMatcher(text = "조회하기"), query = true)
+        finish(Screens.RESULT_LIST) { "ok" }
+    }
+
+    @Test
+    fun `조회 재시도는 3초 간격을 두고 누른다(D17)`() {
+        val h = Harness(start = Screens.SEARCH_FORM, flow = queryOnly, config = RunnerConfig(stepTimeoutMs = 1_000))
+        h.app.ignoreClicks = 1
+        assertIs<RunState.Done>(h.runner.run())
+        val times = h.runner.events.filter { it.kind == "exec" && "CLICK" in it.detail.uppercase() }.map { it.tMs }
+        assertEquals(2, times.size, h.runner.events.toString())
+        assertTrue(times[1] - times[0] >= 3_000, times.toString())
+    }
+
+    @Test
+    fun `조회 한도를 넘기면 더 누르지 않고 정지(D17)`() {
+        val h = Harness(start = Screens.SEARCH_FORM, flow = queryOnly, config = RunnerConfig(maxQueries = 1))
+        h.app.ignoreClicks = 99
+        val st = assertIs<RunState.Stopped>(h.runner.run())
+        assertEquals("limit:queries", st.reason)
+        assertEquals(listOf("click:조회하기"), h.app.raw)
+    }
+
     @Test
     fun `반응 없는 클릭은 재시도 1회로 넘어간다`() {
         val h = Harness(start = Screens.RESULT_LIST, flow = pickTrain)

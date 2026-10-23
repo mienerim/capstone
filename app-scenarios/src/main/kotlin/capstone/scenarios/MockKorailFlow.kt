@@ -22,7 +22,7 @@ object MockKorailFlow {
         type(Screens.SEARCH_FORM, NodeMatcher(id = "dep_station")) { it.getValue(SLOT_ORIGIN) }
         type(Screens.SEARCH_FORM, NodeMatcher(id = "arr_station")) { it.getValue(SLOT_DESTINATION) }
         // 검색 결과는 오래 걸릴 수 있다(상세 ① 4절 초기값 10~15초).
-        click(Screens.SEARCH_FORM, then = Screens.RESULT_LIST, timeoutMs = 15_000, target = NodeMatcher(text = "조회하기", clickable = true))
+        click(Screens.SEARCH_FORM, then = Screens.RESULT_LIST, timeoutMs = 15_000, query = true, target = NodeMatcher(text = "조회하기", clickable = true))
         ask(Screens.RESULT_LIST, SLOT_TRAIN, "어느 열차로 할까요?") { _, w ->
             w.nodes.values
                 .filter { it.clickable && it.viewId?.endsWith(":id/row_train") == true }

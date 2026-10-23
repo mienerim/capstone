@@ -154,7 +154,7 @@ class FakeApp(private val clock: VirtualClock, start: String) : RawActuator, Scr
             popup(NodeMatcher(text = "닫기", clickable = true))
             type(Screens.SEARCH_FORM, NodeMatcher(id = "dep_station")) { it.getValue("origin") }
             type(Screens.SEARCH_FORM, NodeMatcher(id = "arr_station")) { it.getValue("destination") }
-            click(Screens.SEARCH_FORM, then = Screens.RESULT_LIST, timeoutMs = 15_000) { NodeMatcher(text = "조회하기") }
+            click(Screens.SEARCH_FORM, then = Screens.RESULT_LIST, timeoutMs = 15_000, query = true) { NodeMatcher(text = "조회하기") }
             ask(Screens.RESULT_LIST, slot = "train", question = "어느 열차로 할까요?") { _, w ->
                 w.nodes.values.filter { it.viewId?.endsWith("row_train") == true && it.children.any { c -> c.text == "예약가능" } }
                     .mapNotNull { it.children.first().text }

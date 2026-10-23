@@ -13,11 +13,15 @@ sealed interface Step {
     /** 이 단계를 시작할 수 있는 화면(pre-check). null이면 어느 화면에서든 시작한다(wait_for·expect). */
     val on: String?
 
-    /** 노드를 누르고 [then] 화면이 될 때까지 기다린다. */
+    /**
+     * 노드를 누르고 [then] 화면이 될 때까지 기다린다.
+     * [query]는 대상 앱 서버에 조회를 보내는 클릭(예: '조회하기')이다. D17 한도(1건당 3회·간격 3초)를 센다.
+     */
     class Click(
         override val on: String,
         val then: String,
         val timeoutMs: Long?,
+        val query: Boolean = false,
         val target: (Slots) -> NodeMatcher,
     ) : Step
 
@@ -85,12 +89,12 @@ class FlowBuilder internal constructor() {
         popups += PopupRule(dismiss, screen)
     }
 
-    fun click(on: String, then: String, target: NodeMatcher, timeoutMs: Long? = null) {
-        steps += Step.Click(on, then, timeoutMs) { target }
+    fun click(on: String, then: String, target: NodeMatcher, timeoutMs: Long? = null, query: Boolean = false) {
+        steps += Step.Click(on, then, timeoutMs, query) { target }
     }
 
-    fun click(on: String, then: String, timeoutMs: Long? = null, target: (Slots) -> NodeMatcher) {
-        steps += Step.Click(on, then, timeoutMs, target)
+    fun click(on: String, then: String, timeoutMs: Long? = null, query: Boolean = false, target: (Slots) -> NodeMatcher) {
+        steps += Step.Click(on, then, timeoutMs, query, target)
     }
 
     fun type(on: String, target: NodeMatcher, text: (Slots) -> String) {
