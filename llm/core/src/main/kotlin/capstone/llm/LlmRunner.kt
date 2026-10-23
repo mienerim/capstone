@@ -29,11 +29,12 @@ interface LlmRunner : AutoCloseable {
 }
 
 /**
- * 워치독 한도(D11 '앱 쪽 생성 워치독(시간·토큰)'). 수치는 W12 팀 임의값: maxOutputToken 256·10초·공백 연속 8개.
+ * 워치독 한도(D11 '앱 쪽 생성 워치독(시간·토큰)'). 수치는 W12 팀 임의값(10초·공백 연속 8개)과 D65 maxOutputToken 384.
  * 토큰 수는 sink 호출 수로 센다(런타임이 조각 단위로 주므로 실제 토큰 수의 근사).
+ * 엔진은 maxOutputToken에 닿으면 에러 없이 끝낸다(D65) → 잘림은 [SlotValidator]의 닫힘 검사(`truncated`)가 잡는다.
  */
 data class WatchdogLimits(
-    val maxTokens: Int = 256,
+    val maxTokens: Int = 384,
     val timeoutMs: Long = 10_000,
     /** 공백 문자(스페이스·탭·개행·U+2581)가 연달아 이만큼 나오면 #3510 무한 공백으로 보고 멈춘다. */
     val maxWhitespaceRun: Int = 8,

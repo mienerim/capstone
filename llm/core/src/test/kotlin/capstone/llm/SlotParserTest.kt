@@ -63,7 +63,7 @@ class SlotParserTest {
         val p1 = parser(endless)
         assertIs<ParseResult.AskAgain>(p1.parse("서울 부산"))
         assertEquals(listOf("watchdog:token_limit", "watchdog:token_limit"), p1.attempts.map { it.outcome })
-        // 요청 토큰 상한은 단계 상한(64)이고, 워치독은 그와 별개로 256에서 끊는다.
+        // 요청 토큰 상한은 단계 상한(64)이고, 워치독은 그와 별개로 384(D65)에서 끊는다.
         assertEquals(WatchdogLimits().maxTokens + 1, p1.attempts.first().tokens)
 
         val hang = FakeRunner(Script.Hang, Script.Hang)
@@ -76,6 +76,15 @@ class SlotParserTest {
         val p3 = parser(crash)
         assertIs<ParseResult.Ok>(p3.parse("서울 부산"))
         assertEquals("watchdog:runner_error", p3.attempts.first().outcome)
+    }
+
+    @Test
+    fun `출력 상한에서 조용히 잘린 JSON은 truncated로 세고 재생성한다(D65)`() {
+        val cut = Outputs.TRAIN.dropLast(8)
+        val runner = FakeRunner(text(cut), text(Outputs.TRAIN), text(Outputs.SEOUL_BUSAN))
+        val p = parser(runner)
+        assertIs<ParseResult.Ok>(p.parse("서울 부산"))
+        assertEquals(listOf("truncated", "valid", "valid"), p.attempts.map { it.outcome })
     }
 
     @Test

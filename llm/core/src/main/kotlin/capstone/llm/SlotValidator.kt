@@ -94,6 +94,8 @@ object SlotValidator {
 
     private fun parseObject(raw: String): JsonObject {
         val t = raw.trim()
+        // 엔진은 출력 상한에 닿아도 에러 없이 끝낸다(D65). 닫히지 않은 객체는 따로 세어 측정 시트 E에 남긴다.
+        if (t.startsWith("{") && !closes(t)) invalid("truncated")
         // 펜스·머리말·꼬리말을 잘라 내 '살리지' 않는다: 형식 탈취(T3)와 정상 출력을 구분할 수 없게 되기 때문이다.
         if (!t.startsWith("{") || !t.endsWith("}")) invalid("not_a_single_object")
         val e = try {
@@ -102,6 +104,24 @@ object SlotValidator {
             invalid("json_syntax")
         }
         return e as? JsonObject ?: invalid("not_object")
+    }
+
+    /** 첫 `{`의 짝이 문자열 밖에서 닫히는가. 닫힌 뒤의 꼬리말은 여기서 보지 않는다(not_a_single_object가 거부). */
+    private fun closes(t: String): Boolean {
+        var depth = 0
+        var inString = false
+        var escaped = false
+        for (c in t) {
+            when {
+                escaped -> escaped = false
+                inString && c == '\\' -> escaped = true
+                c == '"' -> inString = !inString
+                inString -> {}
+                c == '{' || c == '[' -> depth++
+                c == '}' || c == ']' -> if (--depth == 0) return true
+            }
+        }
+        return false
     }
 
     private fun exactKeys(o: JsonObject, keys: Set<String>) {

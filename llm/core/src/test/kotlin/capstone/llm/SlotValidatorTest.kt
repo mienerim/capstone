@@ -116,4 +116,23 @@ class SlotValidatorTest {
         assertEquals(emptyList(), (wires + Stations.KORAIL).filter { w -> w.any { it.isWhitespace() } })
         assertEquals(Stations.KORAIL.size, Stations.KORAIL.toSet().size)
     }
+
+    @Test
+    fun `잘림 감지 - 닫히지 않은 객체만 truncated, 문자열 안의 괄호는 세지 않는다`() {
+        fun why(raw: String) = (SlotValidator.stage1(raw) as? Validation.Invalid)?.why
+        assertEquals("truncated", why("""{"intent":"train_book","app":"""))
+        assertEquals("truncated", why("""{"intent":"train_book","app":"korail_plus","reason":"}"""))
+        assertEquals("not_a_single_object", why("""{"intent":"unknown","app":null,"reason":null} 끝"""))
+        assertEquals("not_a_single_object", why("설명: {"))
+        assertIs<Validation.Valid<IntentResult>>(SlotValidator.stage1("""{"intent":"train_book","app":null,"reason":null}"""))
+    }
+
+    @Test
+    fun `컨텍스트 한도 - 8GB급은 4096, 6GB급·못 읽음은 2048(D65)`() {
+        val gib = 1024L * 1024 * 1024
+        assertEquals(4096, ContextBudget.maxNumTokens(7_600_000_000L))
+        assertEquals(4096, ContextBudget.maxNumTokens(11 * gib))
+        assertEquals(2048, ContextBudget.maxNumTokens(5_600_000_000L))
+        assertEquals(2048, ContextBudget.maxNumTokens(0))
+    }
 }
