@@ -22,7 +22,9 @@ android {
 kotlin { jvmToolchain(17) }
 
 // 조립 모듈: service + gate + agent-core + llm + app-scenarios를 묶는다(D36).
+// 화면 흐름의 판단(동의·한도·복창)은 app-core(JVM 테스트)에 있고, 여기는 그리기와 조립만 한다(I-46).
 dependencies {
+    implementation(project(":app-core"))
     implementation(project(":service:android"))
     implementation(project(":gate:exec"))
     implementation(project(":agent-core"))
