@@ -59,6 +59,10 @@ class MaskLintTest {
         }
         assertEquals(listOf(Kind.HOSPITAL), kinds("서울대학병원"))
         assertEquals(listOf(Kind.HOSPITAL), kinds("행복요양병원 3층"))
+        // D70: 약국·보건소도 기관명. 치환본 접두어는 통과.
+        assertEquals(listOf(Kind.HOSPITAL), kinds("행복약국 수령"))
+        assertEquals(listOf(Kind.HOSPITAL), kinds("동대문구보건소"))
+        assertTrue(kinds("테스트약국 수령").isEmpty())
     }
 
     @Test

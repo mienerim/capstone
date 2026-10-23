@@ -39,6 +39,42 @@ class DumpMaskerTest {
         assertEquals("조회하기", w.nodes.getValue("0/2/0").text)
         assertEquals("capstone.mock:id/dep_station", w.nodes.getValue("0/1").viewId, "viewId는 서명용으로 남긴다")
     }
+
+    @Test
+    fun `병원·약국 이름과 진료과는 어느 앱에서든 지운다(D70)`() {
+        assertEquals("[MASK] 10:30", DumpMasker.maskText("서울튼튼정형외과의원 10:30"))
+        assertEquals("[MASK] 진료", DumpMasker.maskText("정형외과 진료"))
+        assertEquals("[MASK] 대기", DumpMasker.maskText("튼튼내과 대기"))
+        assertEquals("[MASK]에서 받기", DumpMasker.maskText("행복약국에서 받기"))
+        assertEquals("[MASK] 3층", DumpMasker.maskText("이비인후과 3층"))
+    }
+
+    @Test
+    fun `진료과처럼 보여도 다른 낱말이면 남긴다`() {
+        for (s in listOf("예매 안내과정", "열차 안내", "제외과목 없음", "과천 → 부산")) {
+            assertEquals(s, DumpMasker.maskText(s))
+        }
+    }
+
+    @Test
+    fun `병원 앱 창은 글자를 모두 지우고 구조만 남긴다(D70)`() {
+        val root = FakeNode(
+            packageName = "com.example.clinic", className = "android.widget.FrameLayout", viewId = "clinic:id/root",
+            kids = mutableListOf<FakeNode?>(
+                FakeNode(packageName = "com.example.clinic", text = "김의사 원장", viewId = "clinic:id/doctor"),
+                FakeNode(packageName = "com.example.clinic", text = "10월 27일 오후 2시 예약", clickable = true),
+                FakeNode(packageName = "com.example.clinic", contentDescription = "기침이 나요", hint = "증상을 적어 주세요"),
+            ),
+        )
+        val s = TreeCapture().capture(listOf(FakeWindow(1, root)), 0).snapshot
+        val w = DumpMasker.mask(s, healthPackages = setOf("com.example.clinic")).window(1)!!
+        val texts = w.nodes.values.flatMap { listOf(it.text, it.contentDescription, it.hint) }.filterNotNull()
+        assertTrue(texts.all { it == DumpMasker.MASK }, texts.toString())
+        assertEquals("clinic:id/doctor", w.nodes.getValue("0/0").viewId, "viewId·구조는 남는다")
+        assertTrue(w.nodes.getValue("0/1").clickable)
+        // 목록에 없는 앱은 평소 규칙대로
+        assertEquals("김의사 원장", DumpMasker.mask(s).window(1)!!.nodes.getValue("0/0").text)
+    }
 }
 
 class DumpRecorderTest {

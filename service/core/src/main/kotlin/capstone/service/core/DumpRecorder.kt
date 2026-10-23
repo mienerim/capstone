@@ -21,6 +21,7 @@ data class DeviceInfo(
  * - [packages]에 든 앱이 포그라운드일 때만 쓴다(메신저·은행 등 다른 앱 화면은 저장하지 않는다).
  * - 포그라운드 창 내용(마스킹 후 treeHash)이 직전과 같으면 건너뛴다.
  * - 세션당 [maxLines]까지만 쓴다(저장 공간·실수 방지).
+ * - [healthPackages](병원·약국 앱)는 글자를 모두 지우고 구조만 쓴다(D70 ①). 패키지명은 10-28 C 드라이런 뒤 채운다.
  * screen_label은 비워 둔다: 정답 라벨은 사람이 붙인다(I-20).
  */
 class DumpRecorder(
@@ -29,6 +30,7 @@ class DumpRecorder(
     private val device: DeviceInfo,
     private val sessionId: String,
     private val maxLines: Int = 500,
+    private val healthPackages: Set<String> = emptySet(),
     private val zone: ZoneId = ZoneId.of("Asia/Seoul"),
 ) {
     var written: Int = 0
@@ -46,7 +48,7 @@ class DumpRecorder(
         val pkg = fg.packageName ?: return Result.Skipped("no_package")
         if (pkg !in packages) return Result.Skipped("package_not_listed")
         if (written >= maxLines) return Result.Skipped("max_lines")
-        val masked = DumpMasker.mask(snapshot)
+        val masked = DumpMasker.mask(snapshot, healthPackages)
         val hash = masked.foregroundAppWindow?.treeHash
         if (hash == lastHash) return Result.Skipped("unchanged")
 
