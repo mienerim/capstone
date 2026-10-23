@@ -43,6 +43,11 @@ enum class HandoffTrigger {
     SECURE_WINDOW,
     /** ③ 보안 키패드·비밀번호 입력(SENSITIVE_INPUT·LOGIN 화면). 비밀번호는 저장도 입력도 하지 않는다. */
     SENSITIVE_INPUT,
+    /**
+     * 본인 인증(Any-ID·간편인증, USER_AUTH 화면). 인증은 사람이 직접 하고 에이전트 조작은 0이다
+     * ('본인 확인 대행 금지', 상세 ⑥ 10-26 합의 안건). 인증이 끝나 시나리오 화면이 뜨면 복귀한다.
+     */
+    USER_AUTH,
 }
 
 /** 실행 상태(상세 ① 4절). Done·Stopped는 끝 상태다. */
@@ -333,6 +338,7 @@ class ScenarioRunner(
 
     private fun handoffTrigger(s: Snapshot): HandoffTrigger? = when {
         s.screenshotError == SCREENSHOT_ERROR_SECURE_WINDOW -> HandoffTrigger.SECURE_WINDOW
+        s.screen == Screens.USER_AUTH -> HandoffTrigger.USER_AUTH
         s.screen == Screens.SENSITIVE_INPUT || s.screen == Screens.LOGIN -> HandoffTrigger.SENSITIVE_INPUT
         s.foregroundAppWindow?.nodes?.values?.any { it.visible && it.dataSensitive } == true -> HandoffTrigger.DATA_SENSITIVE
         else -> null

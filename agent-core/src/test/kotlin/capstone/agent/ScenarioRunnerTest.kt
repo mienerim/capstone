@@ -162,6 +162,17 @@ class ScenarioRunnerTest {
     }
 
     @Test
+    fun `본인 인증 화면은 HANDOFF USER_AUTH, 인증 버튼을 누르지 않고 인증 뒤 검색 화면이 뜨면 복귀`() {
+        val h = Harness(start = Screens.USER_AUTH)
+        assertEquals(HandoffTrigger.USER_AUTH, assertIs<RunState.Handoff>(h.runner.run()).trigger)
+        repeat(5) { h.clock.now += 1_000; h.runner.tick() }
+        assertTrue(h.app.raw.isEmpty(), "인증 화면에서는 raw 호출 0: ${h.app.raw}")
+        h.app.goTo(Screens.SEARCH_FORM)
+        assertIs<RunState.Running>(h.runner.tick())
+        assertIs<RunState.AskUser>(h.runner.run())
+    }
+
+    @Test
     fun `일시정지 요청은 다음 제출 전에 멈추고, 같은 화면으로 돌아오면 이어서 진행`() {
         val h = Harness()
         // 첫 raw 호출(팝업 닫기) 도중 사용자가 고정 알림을 눌렀다고 본다.

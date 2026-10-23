@@ -12,6 +12,8 @@ object Screens {
     const val RESULT_LIST = "RESULT_LIST"
     const val DETAIL = "DETAIL"
     const val LOGIN = "LOGIN"
+    /** 본인 인증(Any-ID·간편인증, 외부 인증 앱 포함). 서명은 앱별로 둔다(10-27 녹화 뒤). 항상 HANDOFF. */
+    const val USER_AUTH = "USER_AUTH"
     const val PAYMENT_GATE = "PAYMENT_GATE"
     const val SENSITIVE_INPUT = "SENSITIVE_INPUT"
     const val POPUP_KNOWN = "POPUP_KNOWN"

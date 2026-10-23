@@ -131,6 +131,7 @@ class FakeApp(private val clock: VirtualClock, start: String) : RawActuator, Scr
                 UiNode(className = "LinearLayout", children = listOf(text("결제를 계속하려면"), UiNode(className = "LinearLayout", children = listOf(button("확인"))))),
             ),
             Screens.LOGIN to frame(text("로그인"), edit("pw", "비밀번호"), button("로그인 하기")),
+            Screens.USER_AUTH to frame(text("본인 인증"), button("간편인증"), button("휴대폰 인증")),
             FOREIGN to frame(text("다른 앱")),
             ODD to frame(text("알 수 없는 화면"), button("무언가")),
         )
@@ -146,6 +147,7 @@ class FakeApp(private val clock: VirtualClock, start: String) : RawActuator, Scr
                 ScreenSignature(Screens.RESULT_LIST, setOf(PKG), listOf(NodeMatcher(id = "list"), NodeMatcher(id = "row_train"))),
                 ScreenSignature(Screens.DETAIL, setOf(PKG), listOf(NodeMatcher(text = "좌석 자동배정 결과"))),
                 ScreenSignature(Screens.LOGIN, setOf(PKG), listOf(NodeMatcher(text = "로그인"), NodeMatcher(id = "pw"))),
+                ScreenSignature(Screens.USER_AUTH, setOf(PKG), listOf(NodeMatcher(text = "본인 인증"))),
             ),
         )
 

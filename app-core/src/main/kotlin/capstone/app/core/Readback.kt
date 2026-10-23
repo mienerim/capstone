@@ -70,6 +70,7 @@ object Readback {
     fun handoff(t: HandoffTrigger): String = when (t) {
         HandoffTrigger.LOADING -> "화면이 아직 안 보여요. 잠시 기다리시거나 직접 진행해 주세요. 화면이 돌아오면 이어서 합니다."
         HandoffTrigger.SENSITIVE_INPUT -> "로그인·비밀번호는 직접 입력해 주세요. 끝나면 이어서 합니다."
+        HandoffTrigger.USER_AUTH -> "본인 인증은 직접 해 주세요. 저는 인증 화면을 누르지 않아요. 끝나면 이어서 합니다."
         HandoffTrigger.DATA_SENSITIVE, HandoffTrigger.SECURE_WINDOW ->
             "보호된 화면이라 제가 볼 수 없어요. 이 부분은 직접 진행해 주세요. 끝나면 이어서 합니다."
     }
