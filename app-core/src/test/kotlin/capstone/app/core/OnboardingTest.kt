@@ -110,7 +110,7 @@ class OnboardingTest {
     }
 
     @Test
-    fun `Advanced Protection 켜짐 확인 + 접근성 꺼짐이면 안내만 하고 진행하지 않는다(분기 B, D68)`() {
+    fun `Advanced Protection 켜짐이 확인되면 안내만 하고 진행하지 않는다(분기 B, D68·D71)`() {
         device.ap = true
         val o = onboarding()
         assertEquals(OnboardingScreen.Protected, o.screen)
@@ -146,17 +146,28 @@ class OnboardingTest {
     }
 
     @Test
-    fun `AP가 켜져 있어도 접근성 서비스가 살아 있으면 막지 않는다(D68 ②)`() {
+    fun `AP가 켜져 있으면 접근성 서비스가 살아 있어도 안내 후 중단한다(D71 가용성 전제조건)`() {
         device.ap = true
         device.notifications = true
         device.accessibility = true
         val o = onboarding()
-        assertEquals(OnboardingScreen.Greeting, o.screen)
-        o.next(); o.accept(); o.chooseHelp(HelpMode.ALONE)
-        assertEquals(OnboardingScreen.Ready, o.screen)
-        assertNull(o.startBlocker())
-        device.accessibility = false // 사용 중 회수되면 그때부터 분기 B 문구
+        assertEquals(OnboardingScreen.Protected, o.screen)
         assertEquals(Onboarding.PROTECTED_TEXT, o.startBlocker())
+        o.recheckProtection()
+        assertEquals(OnboardingScreen.Protected, o.screen, "서비스가 붙어 있어도 빠져나오지 않는다")
+    }
+
+    @Test
+    fun `온보딩을 마친 뒤 AP가 켜지면 실행 직전 확인에서 멈춘다(D71)`() {
+        device.notifications = true
+        device.accessibility = true
+        val o = onboarding()
+        o.next(); o.accept(); o.chooseHelp(HelpMode.ALONE); o.finish()
+        assertNull(o.startBlocker())
+        device.ap = true
+        assertEquals(Onboarding.PROTECTED_TEXT, o.startBlocker())
+        device.ap = null // 불명은 막지 않는다(D68 가드)
+        assertNull(o.startBlocker())
     }
 
     @Test
@@ -164,6 +175,9 @@ class OnboardingTest {
         val t = Onboarding.PROTECTED_TEXT
         assertTrue("보호자" in t || "가족" in t, t)
         assertTrue(listOf("끄세요", "꺼 주세요", "해제하세요", "해제해 주세요").none { it in t }, t)
+        // D71: 회수는 정식판 확인 전이라 단정하지 않는다('…수 있어').
+        assertTrue("수 있어" in t, t)
+        assertTrue("쓸 수 없어요" !in t && "도와드릴 수 없어요" !in t, t)
     }
 
     @Test
@@ -187,6 +201,9 @@ class OnboardingTest {
         p.onReturnedFromSettings()
         assertEquals(OnboardingScreen.Protected, p.screen)
         device.accessibility = true
+        p.recheckProtection()
+        assertEquals(OnboardingScreen.Protected, p.screen, "서비스만 붙어서는 안 된다(D71)")
+        device.ap = false
         p.recheckProtection()
         assertEquals(OnboardingScreen.Ready, p.screen)
     }

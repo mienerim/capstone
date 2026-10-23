@@ -9,8 +9,8 @@ interface DeviceChecks {
     fun accessibilityEnabled(): Boolean
 
     /**
-     * Advanced Protection 켜짐 여부. API 36 미만·권한 없음·예외는 '불명' = null(D68 ①).
-     * 켜짐(true)이어도 접근성 서비스가 살아 있으면 막지 않는다 — 분기 B는 켜짐 확인 + 서비스 꺼짐일 때만(D68 ②).
+     * Advanced Protection 켜짐 여부. API 36 미만·권한 없음·플래그 꺼짐·예외는 '불명' = null(D68 ①·D71).
+     * 켜짐(true)은 지원 대상 밖(D33 '고급 보호 꺼짐' 조건, D71) — 서비스가 살아 있어도 분기 B로 안내 후 중단한다.
      */
     fun advancedProtection(): Boolean?
 }
@@ -45,8 +45,8 @@ sealed interface OnboardingScreen {
     data class AskFamily(val protectionUnknown: Boolean = false) : OnboardingScreen
 
     /**
-     * 분기 B: Advanced Protection 켜짐 확인 + 접근성 서비스 꺼짐(D68 ②). 설명 위주, 보호 기능을 끄라고 하지 않고
-     * 보호자 확인을 권한다(우회·tool 위장 금지). 접근성이 켜지면(서비스가 붙으면) 빠져나온다.
+     * 분기 B: Advanced Protection 켜짐 확인(D71: 감지가 아니라 가용성 전제조건). 안내 후 중단 — 설명 위주,
+     * 보호 기능을 끄라고 하지 않고 보호자 확인을 권한다(우회·tool 위장 금지). AP가 꺼진 것이 확인되거나 불명이 되어야 빠져나온다.
      */
     data object Protected : OnboardingScreen
 
@@ -60,8 +60,8 @@ enum class HelpMode(val wire: String) { ALONE("alone"), WITH_FAMILY("family") }
  *
  * - 마이크(RECORD_AUDIO)는 여기서 묻지 않는다: 첫 음성 사용 때 우리 Activity에서 묻는다(D66 수정 ①).
  * - 이미 된 단계(알림 허용·접근성 켜짐)는 건너뛴다. 끝나면 [isDone]이 저장되고, 고지 문구 버전이 바뀌면 ②부터 다시 묻는다.
- * - Advanced Protection 켜짐이 확인되고 접근성 서비스가 꺼져 있으면 [OnboardingScreen.Protected]로 간다(분기 B, D68).
- *   AP를 확인할 수 없으면(null) 막지 않고, 접근성 2회 실패 시 분기 A에 보조 문구를 붙인다.
+ * - Advanced Protection 켜짐이 확인되면 접근성 상태와 관계없이 [OnboardingScreen.Protected]로 간다(분기 B, D71 '안내 후 중단').
+ *   AP를 확인할 수 없으면(null) 막지 않고, 접근성 2회 실패 시 분기 A에 보조 문구를 붙인다(D68 ②).
  * - Android에서는 메인 스레드에서만 부른다고 가정한다(AppSession과 같음).
  */
 class Onboarding(
@@ -133,7 +133,7 @@ class Onboarding(
     }
 
     /**
-     * 분기 B 화면에서 앱으로 돌아왔을 때(onResume). AP를 사용자가 직접 바꿨거나 서비스가 붙었으면 이어 간다.
+     * 분기 B 화면에서 앱으로 돌아왔을 때(onResume). 사용자·보호자가 AP를 직접 바꿨으면 이어 간다.
      * 우리 쪽에서 AP를 끄라고 하지 않으므로, 이 경로는 상태가 바뀐 경우에만 쓰인다.
      */
     fun recheckProtection() {
@@ -176,9 +176,11 @@ class Onboarding(
         else -> null
     }
 
-    /** D68 ②: 켜짐이 '확인'되고 서비스가 꺼져 있을 때만. 불명(null)은 분기 A 쪽(보조 문구)으로 간다. */
-    private fun blockedByProtection(): Boolean =
-        !device.accessibilityEnabled() && device.advancedProtection() == true
+    /**
+     * D71: 켜짐이 '확인'되면 서비스가 아직 살아 있어도 막는다(AP 기기는 지원 대상 밖, 회수 시점은 W09 실측 전).
+     * 불명(null)은 막지 않고 분기 A 쪽(보조 문구)으로 간다(D68 가드 유지).
+     */
+    private fun blockedByProtection(): Boolean = device.advancedProtection() == true
 
     private fun afterFamily(): OnboardingScreen =
         if (device.notificationsGranted()) afterNotifications() else OnboardingScreen.Notifications()
@@ -191,9 +193,13 @@ class Onboarding(
         const val MAX_FAILURES: Int = 2
 
         const val GREETING_TEXT = "말씀만 하세요. 기차표 예매 화면을 채워 드려요. 돈이 나가는 결제는 꼭 직접 누르세요."
-        /** 분기 B(D68 ②): 설명 위주, 해제 강요 없음, 보호자 확인 권고. 문구는 W09 캡처 뒤 확정. */
+        /**
+         * 분기 B(D68 ②·D71): 설명 위주, 해제 강요 없음, 보호자 확인 권고. 회수 여부는 아직 확인 중이라 조건부로 말한다(D71).
+         * 문구는 W09 캡처 뒤 확정.
+         */
         const val PROTECTED_TEXT =
-            "휴대폰의 '고급 보호' 기능이 켜져 있어서 이 앱이 화면을 도와드릴 수 없어요. 휴대폰을 지키는 기능이니 혼자 끄지 마시고, 가족이나 보호자와 함께 확인해 주세요."
+            "휴대폰의 '고급 보호' 기능이 켜져 있어요. 고급 보호가 켜져 있으면 이 앱의 화면 도움이 막히거나 꺼질 수 있어서, 여기서 멈출게요. " +
+                "휴대폰을 지키는 기능이니 혼자 끄지 마시고, 가족이나 보호자와 함께 확인해 주세요."
 
         /** 분기 A 보조 문구(D68 ②): AP를 확인할 수 없는 기기(API 34·35, 권한·예외). */
         const val AP_UNKNOWN_HINT = "휴대폰의 '고급 보호' 기능이 켜져 있으면 이 앱이 제한될 수 있어요."

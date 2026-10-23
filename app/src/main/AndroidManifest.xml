@@ -6,7 +6,8 @@
     <!-- 진행 안내·'멈춤' 호출은 고정 알림으로(D39·D41). 거부하면 실행을 시작하지 않는다(D62·D66 ④). -->
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
 
-    <!-- 온보딩 분기 B(D66): Advanced Protection 켜짐 확인용(API 36+, 읽기만). 켜져 있으면 안내만 하고 진행하지 않는다. -->
+    <!-- 온보딩 분기 B(D66·D71): Advanced Protection 켜짐 확인용(API 36+, 읽기만, AOSP 기준 normal 권한).
+         켜져 있으면 지원 대상 밖이라 안내 후 중단한다. -->
     <uses-permission android:name="android.permission.QUERY_ADVANCED_PROTECTION_MODE" />
 
     <!-- 대상 앱을 앞으로 띄우려면 Android 11+ 패키지 가시성 선언이 필요하다. -->

@@ -27,8 +27,9 @@ class AndroidDeviceChecks(private val context: Context) : DeviceChecks {
     override fun accessibilityEnabled(): Boolean = DumperService.instance != null
 
     /**
-     * AdvancedProtectionManager는 API 36부터, QUERY_ADVANCED_PROTECTION_MODE 권한 필요(D68 ①, 확정).
-     * 그 아래·권한 없음·예외는 '불명' null — 막지 않고, 접근성 2회 실패 시 분기 A + 보조 문구로 간다(D68 ②).
+     * AdvancedProtectionManager는 API 36부터, QUERY_ADVANCED_PROTECTION_MODE(protectionLevel normal, featureFlag
+     * android.security.aapm_api — AOSP 매니페스트 기준, D71) 필요. 갤럭시 실제 반환은 W09 실측.
+     * 그 아래·플래그 꺼짐·권한 없음·예외는 '불명' null — 막지 않고, 접근성 2회 실패 시 분기 A + 보조 문구로 간다(D68 ②).
      */
     override fun advancedProtection(): Boolean? {
         if (Build.VERSION.SDK_INT < 36) return null
