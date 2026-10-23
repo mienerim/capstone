@@ -110,3 +110,13 @@ $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager "platform-tools" "platforms;an
 | Gradle wrapper | 8.14.3 배포본 새로 받음, Maven Central 429 없음(`--max-workers=1`) |
 | dl.google.com | 확인 생략(이전 회차 계속 403). app·service/android·mock-app·llm/litertlm 미빌드 |
 | 결과 | 순수 Kotlin 모듈 테스트 211개 통과(gate/core 46 + gate/exec 3 + agent-core 35 + tools 46 + snapshot 7 + llm/core 24 + service/core 28 + app-core 22). `mask-lint` 저장소 검사 통과 |
+
+## 2026-10-23 (10회차)
+
+| 항목 | 결과 |
+| --- | --- |
+| JDK | 새 컨테이너, apt `openjdk-17-jdk-headless` 재설치 |
+| Gradle wrapper | 8.14.3 배포본 새로 받음, Maven Central 429 없음(`--max-workers=1`) |
+| dl.google.com | 여전히 차단(프록시 connect_rejected). app·service/android·mock-app·llm/litertlm 미빌드 |
+| raw.githubusercontent.com | **접근 가능**. LiteRT-LM v0.18.0 태그 Kotlin 원본(Config·Engine·Conversation·Message·ResponseFormat)을 읽어 `LiteRtLmRunner` 이름을 대조했다(I-62). api.github.com은 403 |
+| 결과 | 순수 Kotlin 모듈 테스트 226개 통과(gate/core 46 + gate/exec 3 + agent-core 35 + tools 46 + snapshot 7 + llm/core 27 + service/core 28 + app-core 34). `mask-lint` 저장소 검사 통과 |

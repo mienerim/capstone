@@ -1,6 +1,6 @@
-# 1주차 계획 ↔ 코드 대조 (7회차, 2026-10-23 / 8·9회차 보충)
+# 1주차 계획 ↔ 코드 대조 (7회차, 2026-10-23 / 8·9회차 보충 / 10회차 20시판 재대조)
 
-Notion '상세 ⑥ 개발 계획(역할·1~2주차)'(10-23 14시판)과 `claude/dev` 코드를 맞춰 본 결과. 
+Notion '상세 ⑥ 개발 계획(역할·1~2주차)'(7회차 14시판, 10회차에 20시판 D65·D66·D67로 다시 맞춤)과 `claude/dev` 코드를 맞춰 본 결과. 
 ✅ 일치 / 🔧 이번 회차에 고침 / ⏳ 실측·합의 뒤 코드에 반영 / 📝 이름만 다름(동작 같음).
 
 | 계획 항목 | 코드 | 상태 |
@@ -10,8 +10,8 @@ Notion '상세 ⑥ 개발 계획(역할·1~2주차)'(10-23 14시판)과 `claude/
 | §2 CI는 JVM 테스트만, 모델 파일 미포함 | `.github/workflows/ci.yml`, `.gitignore`(*.litertlm 등) | ✅ |
 | §6 hello-world 7파일 | `res/xml/a11y_config.xml` → `accessibility_service_config.xml`, `NodeDumper.kt` → `TreeCapture`+`DumpRecorder`, `LlmRunner.kt`(인터페이스)+`LiteRtLmRunner` | 📝 |
 | §6 a11y 플래그 canRetrieveWindowContent·canTakeScreenshot·flagReportViewIds\|flagRetrieveInteractiveWindows | 모두 있음 + flagIncludeNotImportantViews(G5 위임 확인용) | ✅ |
-| §7·D57 첫날 LLM: CPU, topK 1·temperature 0·seed 고정, maxOutputToken 256, enableResponseFormat, tools 미등록 | `LiteRtLmRunner`·`WatchdogLimits` | ✅ (미빌드) |
-| D57 maxNumTokens 2048 | 없었음 → `EngineConfig(maxNumTokens = 2048)` | 🔧 (미빌드, I-55) |
+| §7·D57 첫날 LLM: CPU, topK 1·temperature 0·seed 고정, maxOutputToken 256, enableResponseFormat, tools 미등록 | `LiteRtLmRunner`·`WatchdogLimits` | ✅ (미빌드) → 256은 10회차 D65로 384 |
+| D57 maxNumTokens 2048 | 없었음 → `EngineConfig(maxNumTokens = 2048)` | 🔧 (미빌드, I-55) → 10회차 D65로 대체 |
 | §8 week1.csv 19열 | `docs/measurements/week1.csv` 헤더 동일 | ✅ |
 | D58 커밋 전 CI 정규식 린트 | 없었음 → `tools mask-lint` + CI 단계 + 저장소 자체 검사 테스트 | 🔧 (I-52) |
 | D58 logcat에 노드 텍스트 출력 금지 | `DumperService`는 경로·snapId·예외만 로그 | ✅ |
@@ -33,3 +33,26 @@ Notion '상세 ⑥ 개발 계획(역할·1~2주차)'(10-23 14시판)과 `claude/
 | D63 ④(b) packageNames 지정/비움 수신 비교(실측) | `EventTally` 집계 + `DumperService` 30초 로그, 절차는 FIRST-DAY 3-1 | 🔧 (9회차, I-61, 실측은 A) |
 | D63 ① 직접 startActivity는 보조·실측 비교용 | 코드 없음(기본은 알림 경로) | ✅ |
 | D64 llama.cpp 대안 경로 | 실험 브랜치 전용이라 `claude/dev`에 없음 | ⏳ (I-60) |
+
+## 10회차: 20시판(D65·D66·D67) 재대조
+
+| 계획 항목 | 코드 | 상태 |
+| --- | --- | --- |
+| D65 maxOutputToken 384(요청 1회 생성 상한, 도달 시 에러 없이 끝남) | `WatchdogLimits.maxTokens` 384, 단계별 요청 64·192 유지 | 🔧 (I-62) |
+| D65 잘림 감지 = 앱 쪽 JSON 닫힘 검사 → 재프롬프트 1회/되묻기 | `SlotValidator` `truncated` 코드 → `SlotParser` 재생성 1회 → `AskAgain` | 🔧 (I-62) |
+| D65 maxNumTokens 4096 후보, A34 6GB 2048 | `ContextBudget`(totalMem 7GiB 경계) → `LiteRtLmRunner(maxNumTokens)` | 🔧 (미빌드, 값은 첫날 PSS로 확정) |
+| D65 '4096은 UI 트리 포함', A34 UI 트리 압축 | 우리 llm 입력에 UI 트리 없음(D32·I-38) → 할 일 없음, 2048 단일화 검토 | ⏳ (팀 확인, I-62 ④) |
+| D65·D13 요청마다 새 Conversation | `LiteRtLmRunner.generate`가 매번 만들고 닫음 | ✅ |
+| D65 thinking 끄기(ThinkingConfig 1순위) | `ConversationConfig(thinkingConfig = ThinkingConfig(false))` | 🔧 (미빌드) |
+| D65 Qwen3 extraContext·`<think>` 제거, llama.cpp 5c0d188 | W13 실험 브랜치 몫(D64·I-60) | ⏳ |
+| (10회차 발견) 어댑터 API 이름 | v0.18.0 태그 원본 대조: `Backend.CPU()`·`Contents.of`·`cancelProcess()` | 🔧 (I-62 ⑤) |
+| D66 온보딩 ①~⑦ + 분기 A·B | `Onboarding`(app-core) + `MainActivity` 온보딩 화면 + `AndroidDeviceChecks` | 🔧 (app 쪽 미빌드, I-63) |
+| D66 ④ 알림 거부 시 서비스 시작 막음(D62) | `Onboarding.startBlocker()`를 실행 직전에 확인 | 🔧 |
+| D66 수정 ① 마이크는 첫 음성 사용 때 | 온보딩에 마이크 단계 없음(테스트로 고정). STT 자체가 아직 없음(W03 뒤) | ✅ / ⏳ |
+| D66 수정 ② '외부 전송 없음' 범위 한정 | `Disclosure` v2 문구 | 🔧 (I-64, 기내모드 실측 뒤 확정) |
+| D66 수정 ③ AP 감지 API 36 가드, 34·35는 분기 A로 흡수 | `advancedProtection()` null = 감지 불가 | 🔧 (미빌드) |
+| D66 메뉴명 실기기 캡처로 교체 | 6단계 안내 글은 가안 | ⏳ (FIRST-DAY 4-1) |
+| D66 '연습 1회' | 목업 버튼 흐름 | 🔧 |
+| 10-26 안건: 온보딩 권한 범위·최대 단계 수 | 7단계 그대로 구현, 줄이면 `Onboarding` 상태만 바꾸면 됨 | ⏳ (팀 합의) |
+| D67 코레일 약관 팀 확인 #2 | 저장소 할 일 없음 | ✅ (I-65) |
+
