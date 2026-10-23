@@ -111,3 +111,17 @@ Notion '상세 ⑥ 개발 계획(역할·1~2주차)'(7회차 14시판, 10회차�
 | 항목 | 코드 | 상태 |
 | --- | --- | --- |
 | D36 4.3 라벨 정규화·G2 변형 차단 | `LabelMutationFuzzTest`(변형 3,000개, 시드 고정)로 한글 채움 문자·제로폭으로 끊긴 NFD 자모 우회 2건 발견 → `LabelNormalizer`가 채움 문자 4개 제거 + 마지막 NFC | 🔧 (I-78) |
+
+## 15회차: 결정 로그·상세 ⑥ 10-24 06시판(D77·D78) 대조
+
+| 계획 항목 | 코드 | 상태 |
+| --- | --- | --- |
+| D77 maxNumTokens 전 기기 2048 단일(A34 포함), maxOutputToken 384 유지 | `ContextBudget.MAX_NUM_TOKENS` → `MainActivity`·`LiteRtLmRunner` 기본값, RAM 경계 삭제 | 🔧 (I-79, app·litertlm 미빌드) |
+| D77 상향 조건: 최대 렌더링 입력 > 1,400 또는 Prefill 에러·kMaxNumTokensReached 1회 → 3072 PSS 재측정 | `ContextBudget.shouldTryRaise`·`RAISE_CANDIDATE` + 테스트 | 🔧 (판정은 W03 실측) |
+| D77 입력 600~1,300토큰 추정·스키마 주입 여부 미확인 | 토큰 어림 울타리 테스트(2단계 기차 약 1,325가 최대), FIRST-DAY 4절 켬/끔 측정 | 🔧 / ⏳ (W03) |
+| D77 '4096 후보'·'A34만 2048'·'UI 트리 압축' 폐기 | 코드·FIRST-DAY에서 4096 제거, 10회차 표의 D65 4096 행은 이력으로 남김 | ✅ |
+| D77 '요청마다 새 Conversation' 유지 | `LiteRtLmRunner.generate`가 매번 만들고 닫음 | ✅ |
+| D78 첫날 할 일 5줄 | FIRST-DAY 맨 앞 절(각 절 연결) | 🔧 (문서) |
+| D78 팀 직접 확인 최종본 14건·킥오프 A1~A13 | FIRST-DAY 0절에 처리 항목, 개발 해석 I-5~I-11·I-62·I-70·I-72·I-74·I-78·I-79를 같은 회의로 | ⏳ (팀 10-26) |
+| D78 코레일 서면 문의 B 1통 | 코드 없음 | ⏳ (팀) |
+| 미해결 E P1: .litertlm 고정 KV(예: `_ekv1280`)와 2048의 관계 | 코드 없음. Gemma 3n 파일이 고정 KV면 maxNumTokens보다 파일 값이 우선일 수 있음 → W03에서 `litert-lm-peek`로 확인 | ⏳ (W03, C) |

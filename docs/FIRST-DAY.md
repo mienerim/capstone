@@ -5,11 +5,24 @@
 
 완료 기준(W00): **접근성 서비스 활성 / dump.jsonl 1장 / LLM 1회 응답**.
 
+## 첫날 할 일 5줄 (D78, 상세 ⑥ 10-24 06시 최종 동결 절)
+
+이 문서의 절과 연결만 적는다. 순서는 이대로.
+
+1. **A·B** 팀 폰 3대 + A34 상태 기록 → 2절 (API 37이면 W09부터, D55 '업데이트 보류' 재결정 = 안건 A13)
+2. **B** Android 모듈 컴파일 → 1절 / **C** 모델 로드 체크 5줄 → 4절 (CPU, maxNumTokens 2048, maxOutputToken 384, **실제 입력 토큰 수 기록**)
+3. **A** 삼성 보호 기능 캡처, 위험 앱 보호·Auto Blocker가 우리 APK를 막는지 → 2절 (막히면 5절 시연 기기 절차 변경)
+4. **전원** 킥오프 안건(기존 9+3 + A1~A13)과 코레일 서면 문의(B 1통) 발송 여부 합의 → 0절
+5. **전원** 팀 직접 확인 최종본 14건 담당·기한, 마스킹·파기 책임자 1명, gate 작성자 ≠ 결함 풀 작성자 지정 → 0절
+
 ## 0. 시작 전 (전원)
 
 - [ ] 10-26 전 합의 6항목(결정 트리·승인 범위·계정 명의·기기 순서·gate/결함 작성자 분리·병합 규칙) 회의록 링크
 - [ ] `CODEOWNERS`에 A/B/C GitHub 아이디 기입
 - [ ] 팀원 각자 Hugging Face에서 Gemma 약관 동의
+- [ ] 킥오프 안건 A1~A13(상세 ⑥ 10-24 06시 절)과 함께 개발 백로그 해석 I-5~I-11·I-62·I-70·I-72·I-74·I-78·I-79 처리.
+      A12(토큰 한도)는 코드가 이미 2048 단일(I-79) — 되돌리려면 `ContextBudget.MAX_NUM_TOKENS` 한 줄
+- [ ] 팀 직접 확인 최종본 14건(이전 11건·STT 6건 표기를 대체) 담당·기한을 회의록에 적는다
 
 ## 1. 빌드 (B, 팀 PC)
 
@@ -120,7 +133,11 @@ adb push ./models/gemma-3n-E2B-it-int4.litertlm /sdcard/Android/data/capstone.ap
 
 - [ ] `LiteRtLmRunner`(llm/litertlm) 컴파일. 이름은 10회차에 v0.18.0 태그 원본과 대조해 맞췄다(I-62) — 그래도 틀리면 AAR 기준으로 고친다
 - [ ] 로드 1·2회차 시간, 첫 토큰 시간, 메모리 피크를 week1.csv에 기록
-- [ ] D65 KV 한도: 이 기기의 `ContextBudget` 값(totalMem 7GiB 이상 4096, 아래 2048)으로 로드했을 때 PSS(`adb shell dumpsys meminfo capstone.app`)를 적는다. S24(8GB)에서 4096이 코레일+ 공존(W04)을 깨면 `ContextBudget.LARGE`를 2048로 내리고 I-62에 기록
+- [ ] (15회차, D77) KV 한도는 전 기기 `ContextBudget.MAX_NUM_TOKENS` = 2048. 로드 뒤 PSS(`adb shell dumpsys meminfo capstone.app`)를 적는다
+- [ ] (D77) **최종 렌더링 입력 토큰 수**: 채팅 템플릿 적용 뒤 1단계·2단계 각각, 최장 발화(장황한 말·STT 반복 오인식 흉내, 200자)로 **최대값**을 잰다(평균 아님).
+      `enableResponseFormat` 켬/끔 두 번 재서 차이 = 엔진이 스키마를 프롬프트에 넣는 몫. 저장소 어림값은 2단계 기차가 가장 커서 약 1,325(I-79, 실측 아님)
+- [ ] (D77) 판정: 최대값 > 1,400, 또는 Prefill 에러·kMaxNumTokensReached가 1회라도 → `ContextBudget.shouldTryRaise`가 참 → 3072로 PSS 재측정(코드 기본값은 바꾸지 않는다). 넘치면 3072보다 예시·지시 줄이기를 먼저 검토(팀 합의)
+- [ ] 로그 금지(D70·I-67): 토큰 수는 숫자만 week1.csv에. 프롬프트·발화·출력 원문은 logcat·파일에 남기지 않는다
 
 ## 4-1. 데모 앱 목업 연결 확인 (C, 시간이 남으면)
 
