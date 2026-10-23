@@ -19,6 +19,8 @@ jobs:
       - uses: gradle/actions/setup-gradle@v4
       # 러너에 ANDROID_HOME이 있어도 Android 모듈은 빼고 순수 Kotlin 모듈만 빌드·테스트한다.
       - run: ./gradlew -Pcapstone.android=false test --stacktrace
+      # D58: 덤프·측정 시트 등 데이터 파일에 치환 안 된 개인정보 패턴이 있으면 실패(값은 로그에 안 찍힘).
+      - run: ./gradlew -Pcapstone.android=false -q :tools:run --args="mask-lint $GITHUB_WORKSPACE"
       - if: failure()
         uses: actions/upload-artifact@v4
         with:

@@ -17,6 +17,7 @@ private const val USAGE = """사용법:
   scenario <scenario.json>...  시나리오가 참조하는 스냅샷이 모두 있는지 검사
   harness <scenario.json> [n] [첫 seed]
                                목업 흐름을 seed만 바꿔 n회(기본 20) 실행: 완료율·M7 위반·Wilson 구간
+  mask-lint <경로>...          데이터 파일(.jsonl·.json·.csv 등)에 치환 안 된 개인정보 패턴이 있는지(D58, 커밋 전)
 예: ./gradlew :tools:run --args="validate /abs/path/dump.jsonl\""""
 
 /** 재생기 CLI. 실패하면 종료 코드 1이라 스크립트·CI에서 그대로 쓸 수 있다. */
@@ -28,6 +29,7 @@ fun main(args: Array<String>) {
     val ok = when (args[0]) {
         "validate" -> args.drop(1).all { validate(File(it)) }
         "scenario" -> args.drop(1).all { checkScenario(File(it)) }
+        "mask-lint" -> maskLint(args.drop(1).map(::File))
         "harness" -> harness(File(args[1]), args.getOrNull(2)?.toIntOrNull() ?: 20, args.getOrNull(3)?.toLongOrNull())
         else -> {
             System.err.println(USAGE)
@@ -78,6 +80,19 @@ internal fun harness(file: File, n: Int, firstSeed: Long?, out: Appendable = Sys
         if (violations > 0) out.appendLine("  M7 위반 seed: ${r.runs.filter { it.outcome == Outcome.VIOLATION }.map { it.seed }}")
     }
     return ok && violations == 0
+}
+
+/** 값은 찍지 않고 위치·종류만. 하나라도 있으면 실패(종료 코드 1). */
+internal fun maskLint(roots: List<File>, out: Appendable = System.out): Boolean {
+    val missing = roots.filterNot { it.exists() }
+    missing.forEach { out.appendLine("${it.path}: 없음") }
+    val findings = roots.filter { it.exists() }.flatMap { MaskLint.scan(it) }
+    findings.forEach { out.appendLine(it.toString()) }
+    out.appendLine(
+        if (findings.isEmpty()) "mask-lint: 개인정보 패턴 없음"
+        else "mask-lint: ${findings.size}건 — 치환(D58) 후 다시 커밋하세요. 값은 로그에 남기지 않습니다.",
+    )
+    return findings.isEmpty() && missing.isEmpty()
 }
 
 private inline fun report(file: File, out: Appendable, body: () -> Unit): Boolean = try {
