@@ -47,13 +47,13 @@ sealed interface AppScreen {
  * 앱 흐름(상세 ① 1절): 고지·동의 → 요청(버튼 또는 발화) → 빈 슬롯은 큰 버튼으로 묻기 → 복창·확인 → 실행 → 요약.
  *
  * - 실행은 사용자가 확인 버튼을 누른 뒤에만 시작한다(D16, Play 방어선 2).
- * - LLM은 [parse] 한 곳에서만 쓴다(D32). 발화가 2번 연속 실패하면 버튼으로 묻는다(D16).
+ * - LLM은 앱이 [SlotParser][capstone.llm.SlotParser]로 돌리고(D32, 작업 스레드), 결과만 [onParsed]로 받는다.
+ *   발화가 2번 연속 실패하면 버튼으로 묻는다(D16).
  * - 상태머신을 돌리는 스레드는 앱(서비스) 몫이고, 이 클래스는 상태를 바꾸고 화면을 정한다.
  *   Android에서는 메인 스레드에서만 부른다고 가정한다(I-46).
  */
 class AppSession(
     store: KeyValueStore,
-    private val parse: (String) -> ParseResult,
     private val scenarioFor: (SlotsV1) -> Scenario?,
     private val startRunner: (Flow, Slots) -> ScenarioRunner,
     private val nowMs: () -> Long = System::currentTimeMillis,
@@ -91,9 +91,13 @@ class AppSession(
         next()
     }
 
-    fun submitUtterance(text: String) {
+    /** 요청을 받을 수 있는 화면인가(동의 전·실행 중에는 발화를 파서에 넘기지 않는다). */
+    val acceptsRequest: Boolean get() = screen is AppScreen.Home || screen is AppScreen.Finished
+
+    /** 발화 파싱 결과(SlotParser.parse). */
+    fun onParsed(r: ParseResult) {
         requireIdle()
-        when (val r = parse(text)) {
+        when (r) {
             is ParseResult.Ok -> {
                 parseFailures = 0
                 slots = r.slots
@@ -211,7 +215,7 @@ class AppSession(
     }
 
     private fun requireIdle() {
-        check(screen is AppScreen.Home || screen is AppScreen.Finished) { "요청을 받을 수 없는 화면: $screen" }
+        check(acceptsRequest) { "요청을 받을 수 없는 화면: $screen" }
         runner = null
     }
 

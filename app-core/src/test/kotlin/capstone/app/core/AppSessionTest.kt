@@ -37,6 +37,13 @@ class AppSessionTest {
 
     private var parseResult: ParseResult = ParseResult.AskAgain(1, "unset")
     private val parsed = mutableListOf<String>()
+
+    /** Android의 작업 스레드 파싱을 흉내: 받을 수 있는 화면일 때만 파서를 부른다. */
+    private fun AppSession.submitUtterance(text: String) {
+        check(acceptsRequest)
+        parsed += text
+        onParsed(parseResult)
+    }
     private val started = mutableListOf<Slots>()
     private var live = false
     private lateinit var device: ReplayDevice
@@ -54,7 +61,6 @@ class AppSessionTest {
 
     private fun session(store: KeyValueStore = MemoryStore()) = AppSession(
         store,
-        parse = { parsed += it; parseResult },
         scenarioFor = { s -> if (s.intent == Intent.TRAIN_BOOK) Scenario(MockKorailFlow.flow, liveService = live) else null },
         startRunner = ::startReplay,
         nowMs = { now },
