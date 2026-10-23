@@ -88,3 +88,20 @@ Notion '상세 ⑥ 개발 계획(역할·1~2주차)'(7회차 14시판, 10회차�
 | D73 음성+문구 병행 | 확인음·글자만, 필러 음성은 TTS와 함께 | ⏳ (W03) |
 | D73 W12 판정(첫 피드백 p95 ≤ 1초, 복창 p50 ≤ 8초·p95 ≤ 10초) | 측정 시트 몫, 단계값은 `Timing` | ⏳ (W12) |
 | D13 정정: 8GB는 STT 언로드 직후 initialize, 선로드 금지 | 파싱 요청 때 첫 로드(이미 그 구조), 주석으로 순서 고정 | 🔧 (I-73, STT 붙일 때 강제) |
+
+## 13회차: 결정 로그 10-24 02시(D74·D75·D76) + 상세 ⑥ 10-24 02시 절 대조
+
+상세 ⑥에 '10-24 02시 추가' 절이 생겨 그 절과 결정 로그 원문을 함께 대조했다. 단, 상세 ⑥ 20시판의 온보딩 표 분기 B 문구('쓸 수 없어요')는 여전히 D66판이다 — 코드는 D71 조건부 문구를 따른다(I-70).
+
+| 결정 | 코드 | 상태 |
+| --- | --- | --- |
+| D74 ① 국내 S23~S25 현행 API 37, A34 36(→37 예정), minSdk 34 유지·34/35 분기 유지·36이 보류 폰 주 경로 | minSdk 34, `advancedProtection()` API 가드, compileSdk·targetSdk 36 유지 | ✅ (I-75) |
+| D74 ① 10-26 팀 폰 3대+A34 One UI·API·자동 업데이트·AP 기록 → D55 재결정 | FIRST-DAY 2절 항목·ENV '팀 기기' 표 | 🔧 (문서) |
+| D74 ② 24시간 경고: 서비스 끄면 기록 삭제·재경고 | FIRST-DAY 3절 '켠 시각 기록·W09 전 토글 금지' | 🔧 (문서, One UI 동작은 W09) |
+| D74 ③ 온보딩 사실 전달형 사전 안내 1문장 + '스위치는 그대로' 안내, '닫으세요' 금지 | `Onboarding.WARNING_NOTICE_TEXT`·`WARNING_SWITCH_TEXT`, ⑦ 화면에 표시, 금지어 테스트 | 🔧 (I-74, 그림은 W09 캡처 뒤) |
+| D74 ④ 시연 48시간 전 고정·토글/재설치 금지·`notified_non_accessibility_category_services` 확인 | FIRST-DAY 5절 시연 기기 절차 | 🔧 (문서) |
+| D74 ⑤ isAccessibilityTool=true 금지 | `accessibility_service_config.xml` false + `ManifestPolicyTest` | ✅ |
+| D75 ② 결제기한을 코드 상수로 두지 않음 | 결제기한 상수·타이머 없음(정지점은 '예매하기' 전) | ✅ (I-76) |
+| D75 ①③④ 대표번호·제재 단위·서면 문의 1통 | 코드 없음(팀 확인 #2) | ⏳ (팀, B 10-26 발송) |
+| D76 STT 폴백 순위 ① SpeechRecognizer ② Moonshine tiny-ko / Whisper ③ sherpa 내부 측정만 | STT 코드 없음. NOTICE에 순위·sherpa 모델 번들·고지 금지·Moonshine 재배포 보류, `.gitignore`에 `*.ort`·`*.pt`·`*.safetensors` | 🔧 (I-77) |
+| 상세 ⑥ W10 '정지 중 좌석 선점·세션 만료' | D60 재조회 1회와 함께 W10 실측 뒤 | ⏳ |

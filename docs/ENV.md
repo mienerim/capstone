@@ -59,6 +59,18 @@ $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager "platform-tools" "platforms;an
 | `./gradlew :app:assembleDebug` | | | |
 | litertlm-android 0.18.0 Maven 게시·ResponseFormat | | | |
 
+## 팀 기기 (10-26 기록, D74 — 보호 기능을 끄기 전 상태)
+
+| 항목 | S23 | S24 | S25 | A34 |
+| --- | --- | --- | --- | --- |
+| 모델번호 / RAM | | | | |
+| One UI / Android / API(`ro.build.version.sdk`) | | | | |
+| 보안 패치 | | | | |
+| 자동 업데이트 켜짐? | | | | |
+| 고급 보호(AP) / Auto Blocker | | | | |
+| 판정: API 37 → W09 먼저 / API 36 → 업데이트 보류 유지? | | | | |
+| 접근성 서비스 켠 시각(24시간 경고 확인용, D74 ②) | | | | |
+
 ## 2026-10-23 (4회차)
 
 | 항목 | 결과 |
@@ -138,3 +150,12 @@ $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager "platform-tools" "platforms;an
 | Gradle wrapper | 8.14.3 배포본 새로 받음, `--max-workers=1`, `LANG=C.UTF-8`. Maven Central 429 없음 |
 | dl.google.com | 확인 생략(11회차까지 계속 차단). app·service/android·mock-app·llm/litertlm 미빌드 |
 | 결과 | 순수 Kotlin 모듈 테스트 248개 통과(app-core 38 → 52: WaitFeedback 7·온보딩↔AppSession 통합 6·온보딩 D71 1). `mask-lint` 저장소 검사 통과 |
+
+## 2026-10-24 (13회차)
+
+| 항목 | 결과 |
+| --- | --- |
+| JDK | 새 컨테이너, apt `openjdk-17-jdk-headless` 재설치 |
+| Gradle wrapper | 8.14.3, `--max-workers=1`, `LANG=C.UTF-8`. Maven Central 첫 해석 429 1회 → 45초 뒤 재시도 통과 |
+| dl.google.com | 확인 생략(11회차까지 계속 차단). app·service/android·mock-app·llm/litertlm 미빌드 |
+| 결과 | 순수 Kotlin 모듈 테스트 249개 통과(app-core 52 → 53: D74 24시간 경고 안내 문구). `mask-lint` 저장소 검사 통과 |

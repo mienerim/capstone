@@ -38,6 +38,13 @@ git clone https://github.com/mienerim/capstone && cd capstone
   adb shell getprop ro.build.version.oneui; adb shell getprop ro.build.version.security_patch
   adb shell cat /proc/meminfo | head -1; adb shell df -h /data
   ```
+- [ ] (D74, 끄기 **전에** 먼저 기록 — A34 포함 4대) 설정 > 휴대전화 정보의 One UI·Android 버전·API·보안 패치,
+      자동 업데이트 켜짐 여부, 고급 보호·Auto Blocker 상태를 `docs/ENV.md` '팀 기기' 표에 적는다
+  ```bash
+  adb shell getprop ro.build.version.sdk          # 37 = One UI 9(Android 17), 36 = One UI 8/8.5
+  ```
+  판정: **API 37 기기는 W09(고급 보호·위험 앱 보호) 먼저**, API 36 기기는 '업데이트 보류' 유지 여부를 그 자리에서 결정(D55 재결정).
+  앱은 compileSdk·targetSdk 36이라 API 37 기기에서도 설치된다(I-75) — 문제가 보이면 HOLD로 적는다
 - [ ] AAPM(고급 보호)·Auto Blocker·자동 업데이트 OFF, USB 디버깅 ON, 배터리 '제한 없음'
 - [ ] 코레일+ 패키지·버전 (코드의 `GatePolicy.KORAIL_PLUS = "com.korail.talk"`가 맞는지)
   ```bash
@@ -54,7 +61,9 @@ adb install -r mock-app/build/outputs/apk/debug/mock-app-debug.apk
 
 1. 설정 > 접근성 > 설치된 앱 > '말로 하는 예매 도우미' 켜기. ADB 설치 앱이라 막히면
    설정 > 애플리케이션 > 도우미 > ⋮ > **제한된 설정 허용** 뒤 다시 시도(W00, 실패 시 `adb shell appops set capstone.app ACCESS_RESTRICTED_SETTINGS allow`)
-2. 켤 때 나오는 경고 문구(비 접근성 도구 경고·제한된 설정 경고)를 캡처(W09)
+2. 켤 때 나오는 경고 문구(비 접근성 도구 경고·제한된 설정 경고)를 캡처(W09). 켠 시각을 적어 둔다 —
+   24시간 뒤 비tool 경고가 1회 뜨는지(D74 ②, 10-27 같은 시각에 확인). **서비스를 껐다 켜면 기록이 지워져 다시 24시간**이므로
+   W09 확인 전에는 토글하지 않는다
 3. 목업 앱 실행 → S1~S3을 한 번씩 연다(S3 '예매하기'는 누르지 않는다)
    ```bash
    adb shell am start -S -n capstone.mock/.MockActivity
@@ -118,6 +127,7 @@ adb push ./models/gemma-3n-E2B-it-int4.litertlm /sdcard/Android/data/capstone.ap
 목업 앱(`capstone.mock`)만 대상으로 한다. 코레일+는 건드리지 않는다.
 
 - [ ] `adb install -r app/build/outputs/apk/debug/app-debug.apk` → 첫 실행 온보딩 v1(D66): 인사 → 고지·동의('동의합니다') → 혼자/가족 → 알림 허용 → 접근성 켜기(설정 다녀오면 자동 확인) → '켜졌어요' → 연습
+- [ ] (13회차, D74 ③) '켜졌어요' 화면에 24시간 경고 사전 안내 2줄('…알림이 한 번 올 수 있어요…그대로 두셔도 됩니다', '스위치는 켜진 그대로')이 보이는지
 - [ ] 온보딩 분기: 알림 거부 → 알림 화면에 남음 / 접근성을 안 켜고 2번 돌아옴 → '가족에게 안내 보내기' / 스위치가 안 눌리면 '제한된 설정 허용' 안내. One UI 실제 메뉴 이름을 캡처 3장으로 남긴다(문구 교체용)
 - [ ] (11회차, D69 ⑤) 온보딩 끝낸 뒤 설정 > 알림에서 이 앱 알림 또는 '진행 안내' 채널만 끄기 → '이렇게 찾아 주세요' → 대행이 시작되지 않고 알림 허용 안내 문구가 나오는지. 확인 후 원복
 - [ ] (11회차, D68) S24/S25가 API 36이면 고급 보호 켬/끔 상태 기록만(켜지 말 것 — W09 담당 A가 따로). API 34·35 기기는 접근성 2번 실패 시 분기 A에 '고급 보호가 켜져 있으면 제한될 수 있어요' 문구가 나오는지
@@ -127,7 +137,20 @@ adb push ./models/gemma-3n-E2B-it-int4.litertlm /sdcard/Android/data/capstone.ap
 - [ ] 증명 로그: `adb shell run-as capstone.app cat files/gate.jsonl | tail`
 - [ ] 동의 기록 초기화(다시 시험): `adb shell pm clear capstone.app`
 
-## 5. 마무리
+## 5. 시연 기기 절차 (D74 ④, 시연 주간에 — 첫날은 읽어 두기만)
+
+D55 보호 기능 점검 6줄에 더한다. 비tool 접근성 서비스는 켠 지 24시간 뒤 경고가 한 번 뜨고, 서비스를 끄면 그 기록이 지워진다(AOSP).
+
+1. 시연 **48시간 전** 빌드 고정 → 설치 → 접근성 서비스 켜기
+2. 그 뒤 서비스 끄기/켜기·앱 재설치 **금지**
+3. 경고가 뜨면 한 번 닫아 둔다(사용자 안내 문구에는 '닫으세요'를 쓰지 않는다 — 시연 담당만)
+4. 시연 직전 기록 확인 — 우리 서비스 이름이 있어야 한다
+   ```bash
+   adb shell settings get secure notified_non_accessibility_category_services   # capstone.app/capstone.service.DumperService 포함?
+   ```
+5. D55 ②③(고급 보호·Auto Blocker 꺼짐) 재확인
+
+## 6. 마무리
 
 - [ ] `docs/ENV.md` 팀 PC 표 채우기(OS·Android Studio·JDK·assembleDebug·litertlm 게시 여부)
 - [ ] 막힌 것은 Notion '🛠 개발 백로그' > 막힌 것에 한 줄
