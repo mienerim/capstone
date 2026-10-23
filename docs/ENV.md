@@ -92,3 +92,12 @@ $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager "platform-tools" "platforms;an
 | JDK | 새 컨테이너, apt `openjdk-17-jdk-headless` 재설치 |
 | dl.google.com | 확인 생략(이전 회차 계속 403). app·service/android·mock-app·llm/litertlm 미빌드 |
 | 결과 | 순수 Kotlin 모듈 테스트 200개 통과(+ tools mask-lint 6·SRT 보기 2, agent-core USER_AUTH 1). `mask-lint` 저장소 검사 통과 |
+
+## 2026-10-23 (8회차)
+
+| 항목 | 결과 |
+| --- | --- |
+| JDK | 새 컨테이너, apt `openjdk-17-jdk-headless` 재설치 |
+| Maven Central | 첫 해석 429 2회 → `--max-workers=1` + 40초 간격 재시도 3번째에 통과 |
+| dl.google.com | 확인 생략(이전 회차 계속 403). app·service/android·mock-app·llm/litertlm 미빌드 |
+| 결과 | 순수 Kotlin 모듈 테스트 209개 통과(gate/core 46 + gate/exec 3 + agent-core 35 + tools 46 + snapshot 7 + llm/core 24 + service/core 26 + app-core 22) |
