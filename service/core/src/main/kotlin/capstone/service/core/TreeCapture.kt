@@ -28,10 +28,15 @@ class Frame internal constructor(
 /**
  * 접근성 창 목록 → [Snapshot]. 트리를 조용히 자르지 않는다: 한도를 넘거나 순회 중 자식이 사라지면
  * 그 창의 루트를 통째로 비워 gate가 빈 트리(fail-closed)로 막게 한다. 비밀번호 칸의 text는 읽지 않는다.
+ *
+ * [targetPackages]가 있으면 그 밖 앱의 창은 루트 노드의 패키지만 읽고 순회하지 않는다(D63 ② 개인정보:
+ * 허용목록 밖은 노드 순회 금지). gate는 포그라운드 창의 패키지로 막으므로 패키지만 있으면 충분하다.
+ * null이면 모든 창을 순회한다(테스트·도구용).
  */
 class TreeCapture(
     private val maxNodesPerWindow: Int = 3000,
     private val maxDepth: Int = 128,
+    private val targetPackages: Set<String>? = null,
 ) {
     fun capture(windows: List<A11yWindow>, timestampMs: Long, screenshotError: Int? = null): Frame {
         val uiWindows = ArrayList<UiWindow>(windows.size)
@@ -43,12 +48,17 @@ class TreeCapture(
             } catch (_: RuntimeException) {
                 null
             }
+            val pkg = root?.packageName
+            if (root != null && targetPackages != null && pkg !in targetPackages) {
+                uiWindows += UiWindow(id = w.id, type = w.type, packageName = pkg, active = w.active, focused = w.focused, root = null)
+                continue
+            }
             val walked = root?.let { walk(it) }
             if (root != null && walked == null) dropped += w.id
             uiWindows += UiWindow(
                 id = w.id,
                 type = w.type,
-                packageName = root?.packageName,
+                packageName = pkg,
                 active = w.active,
                 focused = w.focused,
                 root = walked?.first,

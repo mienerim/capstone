@@ -13,9 +13,11 @@ import android.view.accessibility.AccessibilityEvent
 import capstone.gate.GatePolicy
 import capstone.gate.exec.RawActuator
 import capstone.gate.exec.SnapshotSource
+import capstone.service.core.A11yEventKind
 import capstone.service.core.DeviceInfo
 import capstone.service.core.DeviceOps
 import capstone.service.core.DumpRecorder
+import capstone.service.core.EventFilter
 import capstone.service.core.FrameActuator
 import capstone.service.core.FrameHolder
 import capstone.service.core.TreeCapture
@@ -36,7 +38,9 @@ import java.util.concurrent.TimeUnit
  */
 class DumperService : AccessibilityService() {
 
-    private val capture = TreeCapture()
+    // 허용목록 밖 앱 창은 순회하지 않는다(D63 ②). 실행 경로(frames)와 덤프가 같은 캡처를 쓴다.
+    private val capture = TreeCapture(targetPackages = TARGET_PACKAGES)
+    private val events = EventFilter(TARGET_PACKAGES)
     private lateinit var worker: HandlerThread
     private lateinit var handler: Handler
     private var writer: FileWriter? = null
@@ -59,14 +63,22 @@ class DumperService : AccessibilityService() {
         val file = File(filesDir, DUMP_FILE)
         writer = FileWriter(file, true)
         val session = "s" + SimpleDateFormat("yyyyMMdd_HHmmss", Locale.US).format(Date())
-        recorder = DumpRecorder(writer!!, DUMP_PACKAGES, deviceInfo(), session)
+        recorder = DumpRecorder(writer!!, TARGET_PACKAGES, deviceInfo(), session)
         instance = this
         Log.i(TAG, "connected, dump → ${file.absolutePath} (session $session)")
         scheduleDump()
     }
 
+    /** 이벤트는 '다시 볼 때'라는 신호로만 쓴다. 내용은 읽지 않고, 판단은 캡처한 창 목록으로 한다(D63 ②). */
     override fun onAccessibilityEvent(event: AccessibilityEvent?) {
-        if (event?.packageName?.toString()?.let { it in DUMP_PACKAGES } == true) scheduleDump()
+        event ?: return
+        val kind = when (event.eventType) {
+            AccessibilityEvent.TYPE_WINDOW_STATE_CHANGED -> A11yEventKind.WINDOW_STATE_CHANGED
+            AccessibilityEvent.TYPE_WINDOW_CONTENT_CHANGED -> A11yEventKind.WINDOW_CONTENT_CHANGED
+            AccessibilityEvent.TYPE_WINDOWS_CHANGED -> A11yEventKind.WINDOWS_CHANGED
+            else -> A11yEventKind.OTHER
+        }
+        if (events.shouldCapture(kind, event.packageName?.toString())) scheduleDump()
     }
 
     override fun onInterrupt() = Unit
@@ -144,8 +156,11 @@ class DumperService : AccessibilityService() {
         private const val TAP_MS = 50L
         private const val GESTURE_TIMEOUT_MS = 1_000L
 
-        /** 덤프 허용 앱. 병원 앱 패키지는 10-28 드라이런 때 추가(상세 ⑥). */
-        val DUMP_PACKAGES: Set<String> = setOf(GatePolicy.KORAIL_PLUS, GatePolicy.MOCK_APP)
+        /**
+         * 서비스가 노드를 읽는 앱(덤프·캡처 순회 허용목록). 시나리오 `Flow.packages`는 이 안에 있어야 한다.
+         * 병원 앱 패키지는 10-28 드라이런 때 추가(상세 ⑥).
+         */
+        val TARGET_PACKAGES: Set<String> = setOf(GatePolicy.KORAIL_PLUS, GatePolicy.MOCK_APP)
 
         /** app이 실행 경로를 조립할 때 쓴다. 서비스가 꺼져 있으면 null. */
         @Volatile
