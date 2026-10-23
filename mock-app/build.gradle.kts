@@ -22,6 +22,4 @@ android {
 kotlin { jvmToolchain(17) }
 
 // 코레일+ 흉내 목업 4화면(S1 검색폼/S2 결과/S3 좌석+예매하기/S4 결제 진입) + 스위치(D34).
-dependencies {
-    implementation(libs.androidx.core.ktx)
-}
+// 플랫폼 위젯만 쓴다(AndroidX 의존 없음). 사용법은 mock-app/README.md.

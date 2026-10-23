@@ -1,5 +1,17 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!-- INTERNET 권한을 선언하지 않는다(완전 온디바이스, D1·D38). 빌드 후 aapt dump permissions로 확인. -->
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
-    <application android:label="@string/app_name" />
+    <application
+        android:label="@string/app_name"
+        android:theme="@android:style/Theme.DeviceDefault.Light.NoActionBar">
+        <!-- 변형 스위치는 adb shell am start 인텐트 extra로 넘긴다(mock-app/README.md). -->
+        <activity
+            android:name="capstone.mock.MockActivity"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
+    </application>
 </manifest>
