@@ -69,3 +69,33 @@ class EventFilterTest {
         assertTrue(out.isEmpty())
     }
 }
+
+/** D63 ④(b): packageNames 비움/지정 수신 비교용 집계. 다른 앱 이름은 남지 않는다. */
+class EventTallyTest {
+    @Test
+    fun `종류와 출처로만 세고 다른 앱 이름은 요약에 없다`() {
+        val filter = EventFilter(setOf("capstone.mock"))
+        val tally = EventTally(setOf("capstone.mock"))
+        listOf(
+            A11yEventKind.WINDOWS_CHANGED to null,
+            A11yEventKind.WINDOWS_CHANGED to null,
+            A11yEventKind.WINDOW_STATE_CHANGED to "capstone.mock",
+            A11yEventKind.WINDOW_CONTENT_CHANGED to "com.kakao.talk",
+        ).forEach { (k, p) -> tally.count(k, p, filter.shouldCapture(k, p)) }
+
+        assertEquals(2, tally.get(A11yEventKind.WINDOWS_CHANGED, EventTally.Source.NULL_PACKAGE))
+        assertEquals(1, tally.get(A11yEventKind.WINDOW_CONTENT_CHANGED, EventTally.Source.OTHER_APP))
+        assertEquals(0, tally.get(A11yEventKind.WINDOWS_CHANGED, EventTally.Source.TARGET))
+        val s = tally.summary()
+        assertEquals(
+            "events WINDOWS_CHANGED/NULL_PACKAGE=2 WINDOW_CONTENT_CHANGED/OTHER_APP=1 WINDOW_STATE_CHANGED/TARGET=1 captured=3",
+            s,
+        )
+        assertFalse("kakao" in s)
+    }
+
+    @Test
+    fun `받은 것이 없으면 none`() {
+        assertEquals("events none captured=0", EventTally(emptySet()).summary())
+    }
+}

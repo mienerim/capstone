@@ -7,6 +7,7 @@ import android.graphics.Path
 import android.os.Build
 import android.os.Handler
 import android.os.HandlerThread
+import android.os.Looper
 import android.os.SystemClock
 import android.util.Log
 import android.view.accessibility.AccessibilityEvent
@@ -18,6 +19,7 @@ import capstone.service.core.DeviceInfo
 import capstone.service.core.DeviceOps
 import capstone.service.core.DumpRecorder
 import capstone.service.core.EventFilter
+import capstone.service.core.EventTally
 import capstone.service.core.FrameActuator
 import capstone.service.core.FrameHolder
 import capstone.service.core.TreeCapture
@@ -41,6 +43,9 @@ class DumperService : AccessibilityService() {
     // 허용목록 밖 앱 창은 순회하지 않는다(D63 ②). 실행 경로(frames)와 덤프가 같은 캡처를 쓴다.
     private val capture = TreeCapture(targetPackages = TARGET_PACKAGES)
     private val events = EventFilter(TARGET_PACKAGES)
+    // D63 ④(b) 실측: packageNames 비움/지정 때 받는 이벤트 수를 logcat으로 비교한다(FIRST-DAY 3-1).
+    private val tally = EventTally(TARGET_PACKAGES)
+    private val main = Handler(Looper.getMainLooper())
     private lateinit var worker: HandlerThread
     private lateinit var handler: Handler
     private var writer: FileWriter? = null
@@ -67,6 +72,14 @@ class DumperService : AccessibilityService() {
         instance = this
         Log.i(TAG, "connected, dump → ${file.absolutePath} (session $session)")
         scheduleDump()
+        main.postDelayed(tallyTask, TALLY_MS)
+    }
+
+    private val tallyTask = object : Runnable {
+        override fun run() {
+            Log.i(TAG, tally.summary())
+            main.postDelayed(this, TALLY_MS)
+        }
     }
 
     /** 이벤트는 '다시 볼 때'라는 신호로만 쓴다. 내용은 읽지 않고, 판단은 캡처한 창 목록으로 한다(D63 ②). */
@@ -78,13 +91,18 @@ class DumperService : AccessibilityService() {
             AccessibilityEvent.TYPE_WINDOWS_CHANGED -> A11yEventKind.WINDOWS_CHANGED
             else -> A11yEventKind.OTHER
         }
-        if (events.shouldCapture(kind, event.packageName?.toString())) scheduleDump()
+        val pkg = event.packageName?.toString()
+        val wanted = events.shouldCapture(kind, pkg)
+        tally.count(kind, pkg, wanted)
+        if (wanted) scheduleDump()
     }
 
     override fun onInterrupt() = Unit
 
     override fun onDestroy() {
         instance = null
+        main.removeCallbacks(tallyTask)
+        Log.i(TAG, tally.summary())
         if (::worker.isInitialized) worker.quitSafely()
         writer?.close()
         super.onDestroy()
@@ -155,6 +173,7 @@ class DumperService : AccessibilityService() {
         private const val SETTLE_MS = 400L
         private const val TAP_MS = 50L
         private const val GESTURE_TIMEOUT_MS = 1_000L
+        private const val TALLY_MS = 30_000L
 
         /**
          * 서비스가 노드를 읽는 앱(덤프·캡처 순회 허용목록). 시나리오 `Flow.packages`는 이 안에 있어야 한다.
