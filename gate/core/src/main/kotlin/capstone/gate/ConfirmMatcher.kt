@@ -5,8 +5,13 @@ import java.text.Normalizer
 /**
  * 라벨 정규화(D36 4.3): NFKC → 글자·숫자 외 전부 제거(공백·구두점·제로폭·FE0F·이모지) → 소문자.
  * NFKC가 정준 결합까지 하므로 NFD로 풀린 한글 자모도 완성형으로 돌아온다. 매칭 전용이고 로그는 원문을 쓴다.
+ * 한글 채움 문자(U+115F·U+1160·U+3164·U+FFA0)는 보이지 않지만 유니코드상 글자(Lo)라 따로 지운다
+ * ('예매ㅤ하기' 우회, LabelMutationFuzzTest·I-78). 지운 뒤 NFC를 한 번 더 한다: NFD 자모 사이에
+ * 제로폭 문자가 끼면 첫 NFKC에서 결합되지 않기 때문이다.
  */
 object LabelNormalizer {
+    private val HANGUL_FILLERS = setOf(0x115F, 0x1160, 0x3164, 0xFFA0)
+
     fun normalize(raw: String?): String {
         if (raw.isNullOrEmpty()) return ""
         val nfkc = Normalizer.normalize(raw, Normalizer.Form.NFKC)
@@ -15,9 +20,9 @@ object LabelNormalizer {
         while (i < nfkc.length) {
             val cp = nfkc.codePointAt(i)
             i += Character.charCount(cp)
-            if (Character.isLetterOrDigit(cp)) sb.appendCodePoint(Character.toLowerCase(cp))
+            if (Character.isLetterOrDigit(cp) && cp !in HANGUL_FILLERS) sb.appendCodePoint(Character.toLowerCase(cp))
         }
-        return sb.toString()
+        return Normalizer.normalize(sb, Normalizer.Form.NFC)
     }
 }
 

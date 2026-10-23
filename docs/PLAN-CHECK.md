@@ -105,3 +105,9 @@ Notion '상세 ⑥ 개발 계획(역할·1~2주차)'(7회차 14시판, 10회차�
 | D75 ①③④ 대표번호·제재 단위·서면 문의 1통 | 코드 없음(팀 확인 #2) | ⏳ (팀, B 10-26 발송) |
 | D76 STT 폴백 순위 ① SpeechRecognizer ② Moonshine tiny-ko / Whisper ③ sherpa 내부 측정만 | STT 코드 없음. NOTICE에 순위·sherpa 모델 번들·고지 금지·Moonshine 재배포 보류, `.gitignore`에 `*.ort`·`*.pt`·`*.safetensors` | 🔧 (I-77) |
 | 상세 ⑥ W10 '정지 중 좌석 선점·세션 만료' | D60 재조회 1회와 함께 W10 실측 뒤 | ⏳ |
+
+## 14회차: 새 결정 없음(결정 로그 최종 D76) — 9단계 테스트 보강
+
+| 항목 | 코드 | 상태 |
+| --- | --- | --- |
+| D36 4.3 라벨 정규화·G2 변형 차단 | `LabelMutationFuzzTest`(변형 3,000개, 시드 고정)로 한글 채움 문자·제로폭으로 끊긴 NFD 자모 우회 2건 발견 → `LabelNormalizer`가 채움 문자 4개 제거 + 마지막 NFC | 🔧 (I-78) |
