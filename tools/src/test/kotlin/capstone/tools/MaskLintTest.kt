@@ -39,6 +39,29 @@ class MaskLintTest {
     }
 
     @Test
+    fun `해시·16진수·영숫자 id 속 숫자열은 잡지 않는다`() {
+        listOf(
+            """{"tree_hash":"a3f01012345678bc"}""",
+            "sha256 e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+            """{"snap_id":"s20261023_165100_0001"}""",
+            "build 0x01012345678",
+            "id=ab800101-2345678cd",
+        ).forEach { assertTrue(kinds(it).isEmpty(), "$it → ${kinds(it)}") }
+        // 한글·문장부호와 붙은 번호는 그대로 잡는다.
+        assertEquals(listOf(Kind.PHONE), kinds("연락처01012345678입니다"))
+        assertEquals(listOf(Kind.PHONE), kinds("tel:010-1234-5678"))
+    }
+
+    @Test
+    fun `병원 종류·직함 같은 일반 낱말은 통과, 고유 이름은 잡는다`() {
+        listOf("대학병원 예약", "근처 종합병원", "요양병원", "동물병원 아님", "국회의원 선거").forEach {
+            assertTrue(kinds(it).isEmpty(), "$it → ${kinds(it)}")
+        }
+        assertEquals(listOf(Kind.HOSPITAL), kinds("서울대학병원"))
+        assertEquals(listOf(Kind.HOSPITAL), kinds("행복요양병원 3층"))
+    }
+
+    @Test
     fun `주민번호는 한 번만 보고하고 칸 번호를 준다`() {
         val r = MaskLint.scanLine("x 800101-2345678")
         assertEquals(listOf(Kind.RRN to 3), r)

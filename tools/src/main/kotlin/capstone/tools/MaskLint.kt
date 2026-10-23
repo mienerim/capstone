@@ -24,15 +24,23 @@ object MaskLint {
     private val FAKE_PREFIXES = listOf("테스트", "목업", "가짜", "예시", "샘플")
     private val SAFE_EMAIL_DOMAINS = setOf("example.com", "example.org", "example.net", "test", "invalid", "localhost")
 
-    // 숫자열 안의 일부(타임스탬프·해시)를 잡지 않도록 앞뒤가 숫자가 아니어야 한다.
+    // 숫자열·해시(16진수) 안의 일부를 잡지 않도록 앞뒤가 숫자나 영문자가 아니어야 한다. 한글은 붙어 있어도 잡는다('연락처01012345678').
+    private const val L = """(?<![0-9A-Za-z])"""
+    private const val R = """(?![0-9A-Za-z])"""
     private val patterns: List<Pair<Kind, Regex>> = listOf(
-        Kind.RRN to Regex("""(?<!\d)\d{2}(0[1-9]|1[0-2])(0[1-9]|[12]\d|3[01])\s*-\s*[1-8]\d{6}(?!\d)"""),
-        Kind.CARD to Regex("""(?<!\d)\d{4}[ -]\d{4}[ -]\d{4}[ -]\d{3,4}(?!\d)"""),
-        Kind.PHONE to Regex("""(?<!\d)01[016789][ .-]?\d{3,4}[ .-]?\d{4}(?!\d)"""),
+        Kind.RRN to Regex("""$L\d{2}(0[1-9]|1[0-2])(0[1-9]|[12]\d|3[01])\s*-\s*[1-8]\d{6}$R"""),
+        Kind.CARD to Regex("""$L\d{4}[ -]\d{4}[ -]\d{4}[ -]\d{3,4}$R"""),
+        Kind.PHONE to Regex("""${L}01[016789][ .-]?\d{3,4}[ .-]?\d{4}$R"""),
         Kind.EMAIL to Regex("""[\w.+-]+@([\w-]+(?:\.[\w-]+)+)"""),
         // 열차 날짜(2026-…)는 두고, 사람 생년으로 보이는 1900~2009년 날짜만.
-        Kind.BIRTHDATE to Regex("""(?<!\d)(19\d{2}|200\d)\s?[.\-/년]\s?(0?[1-9]|1[0-2])\s?[.\-/월]\s?(0?[1-9]|[12]\d|3[01])(?!\d)"""),
+        Kind.BIRTHDATE to Regex("""$L(19\d{2}|200\d)\s?[.\-/년]\s?(0?[1-9]|1[0-2])\s?[.\-/월]\s?(0?[1-9]|[12]\d|3[01])$R"""),
         Kind.HOSPITAL to Regex("""[가-힣A-Za-z0-9]{2,}(?:한의원|병원|의원|치과|요양원|클리닉)"""),
+    )
+
+    /** 기관 이름이 아닌 일반 낱말(병원 종류·직함). 낱말 전체가 이것이면 통과. */
+    private val GENERIC_INSTITUTION_WORDS = setOf(
+        "대학병원", "종합병원", "상급종합병원", "요양병원", "동물병원", "전문병원", "한방병원", "치과병원",
+        "국회의원",
     )
 
     fun scanLine(line: String): List<Pair<Kind, Int>> = buildList {
@@ -50,7 +58,7 @@ object MaskLint {
 
     private fun isReal(kind: Kind, m: MatchResult): Boolean = when (kind) {
         Kind.EMAIL -> m.groupValues[1].lowercase().let { d -> SAFE_EMAIL_DOMAINS.none { d == it || d.endsWith(".$it") } }
-        Kind.HOSPITAL -> FAKE_PREFIXES.none { m.value.startsWith(it) }
+        Kind.HOSPITAL -> FAKE_PREFIXES.none { m.value.startsWith(it) } && m.value !in GENERIC_INSTITUTION_WORDS
         else -> true
     }
 
