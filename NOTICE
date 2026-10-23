@@ -15,4 +15,9 @@ Copyright 2026 캡스톤 팀
 
 복사 금지(라이선스): DroidRun Portal(AGPL-3.0), blurr.
 의존 라이브러리: com.google.ai.edge.litertlm:litertlm-android(Apache-2.0), Kotlin 표준 라이브러리, kotlinx-serialization-json(Apache-2.0, tools), JUnit 5(EPL-2.0, 테스트 전용).
-모델 파일(Gemma 3n E2B)은 저장소에 포함하지 않으며 Gemma 이용 약관을 따른다.
+모델 파일(Gemma 3n E2B)은 저장소에 포함하지 않으며 Gemma 이용 약관을 따른다(D46).
+  Gemma is provided under and subject to the Gemma Terms of Use found at ai.google.dev/gemma/terms
+  금지 사용 정책: https://ai.google.dev/gemma/prohibited_use_policy
+  모델 출처: https://huggingface.co/google/gemma-3n-E2B-it-litert-lm (gemma-3n-E2B-it-int4.litertlm)
+  (Gemma 4로 바꾸면 Apache-2.0 — 10-30 C가 모델 카드 LICENSE로 확인 후 이 항목을 고친다.)
+STT 폴백(sherpa-onnx 한국어 모델)을 도입하면 모델 라이선스와 학습 데이터 약관을 여기에 적는다(현재 미확정).

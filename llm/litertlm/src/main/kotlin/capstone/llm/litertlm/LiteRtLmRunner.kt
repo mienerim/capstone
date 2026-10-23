@@ -35,7 +35,10 @@ class LiteRtLmRunner(
     /** 콜드 로드는 수 초 걸린다(공식 '최대 약 10초'). 메인 스레드에서 부르지 않는다. */
     @Synchronized
     fun ensureLoaded(): Engine = engine ?: Engine(
-        EngineConfig(modelPath = modelFile.absolutePath, backend = backend, cacheDir = cacheDir.absolutePath),
+        // maxNumTokens: D57 첫날 설정(컨텍스트 2048). KV 캐시 크기라 8GB 기기 메모리에 직접 걸린다(W04).
+        EngineConfig(
+            modelPath = modelFile.absolutePath, backend = backend, cacheDir = cacheDir.absolutePath, maxNumTokens = MAX_NUM_TOKENS,
+        ),
     ).also {
         it.initialize()
         engine = it
@@ -77,5 +80,6 @@ class LiteRtLmRunner(
 
     private companion object {
         const val SEED = 7
+        const val MAX_NUM_TOKENS = 2048
     }
 }

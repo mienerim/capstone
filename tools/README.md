@@ -9,7 +9,8 @@
 | `replay/Scenario.kt` | 시나리오 JSON: 전이 테이블·결함·기대값(never_click·must_reach·never_reach) |
 | `replay/ReplayDevice.kt` | 재생 장치: 전이·SET_TEXT 반영·결함 주입 7종·나간 액션 로그·M7 위반 판정 |
 | `replay/Harness.kt` | n=20/60 반복 하니스(seed만 바꿔 실행)·`Stats`(Wilson 95% 하한·상한, rule of 3) |
-| `ReplayCli.kt` | `validate`(덤프 검사)·`scenario`(참조 검사)·`harness`(반복 실행, M7 위반 시 종료 코드 1) |
+| `ReplayCli.kt` | `validate`(덤프 검사)·`scenario`(참조 검사)·`harness`(반복 실행, M7 위반 시 종료 코드 1)·`mask-lint`(개인정보 패턴, 발견 시 종료 코드 1) |
+| `MaskLint.kt` | D58 커밋 전 린트: .jsonl·.json·.csv·.tsv·.txt·.log에서 휴대폰·주민번호형·카드·이메일·생년월일(1900~2009)·실병원명. 값은 출력하지 않음 |
 | `fixtures/mock/` | 목업 4화면+팝업 **합성** 스냅샷(`gen_mock.py`로 생성)과 시나리오 3개(happy·faults·fault-pool) |
 
 ```bash
@@ -17,6 +18,7 @@
 ./gradlew :tools:run --args="validate $PWD/dump.jsonl"      # 10-27 실기기 덤프 형식 확인
 ./gradlew :tools:run --args="scenario $PWD/tools/fixtures/mock/happy.json"
 ./gradlew :tools:run --args="harness $PWD/tools/fixtures/mock/fault-pool.json 60"   # 결함 풀 60회
+./gradlew :tools:run --args="mask-lint $PWD"                 # 커밋 전 개인정보 패턴 검사(D58)
 ```
 
 ## 결함 주입 7종 (D36)
