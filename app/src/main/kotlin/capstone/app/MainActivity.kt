@@ -79,6 +79,10 @@ class MainActivity : Activity() {
             wentToSettings = false
             onboarding.onReturnedFromSettings()
             render()
+        } else if (onboarding.screen == OnboardingScreen.Protected) {
+            // 분기 B(D68): 서비스 활성은 매번 다시 본다. 우리가 AP를 끄라고 하지는 않는다.
+            onboarding.recheckProtection()
+            render()
         }
     }
 
@@ -173,7 +177,7 @@ class MainActivity : Activity() {
         )
         is OnboardingScreen.Notifications -> buildList {
             add(title("진행 상황을 알림으로 알려 드려요. 알림의 '그만'으로 언제든 멈출 수 있어요."))
-            if (s.denied) add(body("알림을 허용해야 시작할 수 있어요. 다시 눌러 허용해 주세요. 안 되면 설정 > 알림에서 켜 주세요."))
+            if (s.denied) add(body("알림이 꺼져 있으면 찾기를 시작하지 않아요. 다시 눌러 허용해 주세요. 안 되면 설정 > 알림에서 켜 주세요."))
             add(big("알림 허용하기") { requestPermissions(arrayOf(Manifest.permission.POST_NOTIFICATIONS), REQ_NOTIFICATIONS) })
         }
         is OnboardingScreen.Accessibility -> buildList {
@@ -189,8 +193,9 @@ class MainActivity : Activity() {
             big("설정으로 가기") { openAccessibilitySettings() },
             big("처음 안내로") { onboarding.retry(); render() },
         )
-        OnboardingScreen.AskFamily -> listOf(
+        is OnboardingScreen.AskFamily -> listOfNotNull(
             title("설정이 어려우시면 가족에게 도움을 청해 보세요."),
+            if (s.protectionUnknown) body(Onboarding.AP_UNKNOWN_HINT) else null,
             big("가족에게 안내 보내기") { shareGuide() },
             big("다시 해 볼게요") { onboarding.retry(); render() },
             big("스위치가 안 눌려요") { onboarding.switchBlocked(); render() },
@@ -202,7 +207,7 @@ class MainActivity : Activity() {
         )
         OnboardingScreen.Protected -> listOf(
             title(Onboarding.PROTECTED_TEXT),
-            body("이 보호 기능을 끄고 쓰시라고 권하지 않아요. 가족이나 휴대폰 판매처에 문의해 주세요."),
+            big("가족에게 안내 보내기") { shareGuide() },
         )
         OnboardingScreen.Done -> emptyList()
     }
@@ -247,7 +252,7 @@ class MainActivity : Activity() {
     // ---- 동작 ----
 
     private fun startRun() {
-        // D62: 알림·접근성이 없거나 Advanced Protection이 켜져 있으면 시작하지 않는다.
+        // D62·D69 ⑤: 알림·접근성이 없거나 AP 켜짐 + 서비스 꺼짐(D68)이면 대행을 시작하지 않고 이 화면에서 안내한다.
         onboarding.startBlocker()?.let {
             session.reset(it)
             render()

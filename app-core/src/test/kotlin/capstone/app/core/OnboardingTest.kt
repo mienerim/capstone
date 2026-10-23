@@ -60,13 +60,13 @@ class OnboardingTest {
     }
 
     @Test
-    fun `알림을 거부하면 알림 단계에 남고 실행도 막힌다(D62)`() {
+    fun `알림을 거부하면 알림 단계에 남고 대행도 시작하지 않는다(D62·D69 ⑤)`() {
         val o = onboarding()
         o.next(); o.accept(); o.chooseHelp(HelpMode.ALONE)
         o.onNotificationResult(false)
         assertEquals(OnboardingScreen.Notifications(denied = true), o.screen)
         device.accessibility = true
-        assertEquals("알림을 허용해야 시작할 수 있어요. 설정에서 알림을 켜 주세요.", o.startBlocker())
+        assertEquals(Onboarding.NOTIFICATIONS_OFF_TEXT, o.startBlocker())
         device.notifications = true
         assertNull(o.startBlocker())
     }
@@ -87,8 +87,9 @@ class OnboardingTest {
         o.next(); o.accept(); o.chooseHelp(HelpMode.ALONE)
         o.onReturnedFromSettings()
         assertEquals(OnboardingScreen.Accessibility(failures = 1), o.screen)
+        device.ap = false
         o.onReturnedFromSettings()
-        assertEquals(OnboardingScreen.AskFamily, o.screen)
+        assertEquals(OnboardingScreen.AskFamily(protectionUnknown = false), o.screen)
         o.retry()
         assertEquals(OnboardingScreen.Accessibility(), o.screen)
     }
@@ -101,7 +102,7 @@ class OnboardingTest {
         o.switchBlocked()
         assertEquals(OnboardingScreen.RestrictedSettings, o.screen)
         o.onReturnedFromSettings()
-        assertEquals(OnboardingScreen.AskFamily, o.screen)
+        assertEquals(OnboardingScreen.AskFamily(protectionUnknown = true), o.screen)
         o.switchBlocked()
         device.accessibility = true
         o.onReturnedFromSettings()
@@ -109,7 +110,7 @@ class OnboardingTest {
     }
 
     @Test
-    fun `Advanced Protection이 켜져 있으면 안내만 하고 진행하지 않는다(분기 B)`() {
+    fun `Advanced Protection 켜짐 확인 + 접근성 꺼짐이면 안내만 하고 진행하지 않는다(분기 B, D68)`() {
         device.ap = true
         val o = onboarding()
         assertEquals(OnboardingScreen.Protected, o.screen)
@@ -118,12 +119,11 @@ class OnboardingTest {
     }
 
     @Test
-    fun `설정에 다녀오는 사이 Advanced Protection이 켜져도 분기 B`() {
+    fun `설정에 다녀오는 사이 Advanced Protection이 켜지고 접근성이 안 켜졌으면 분기 B`() {
         device.notifications = true
         val o = onboarding()
         o.next(); o.accept(); o.chooseHelp(HelpMode.ALONE)
         device.ap = true
-        device.accessibility = true
         o.onReturnedFromSettings()
         assertEquals(OnboardingScreen.Protected, o.screen)
     }
@@ -132,6 +132,63 @@ class OnboardingTest {
     fun `API 34·35처럼 AP를 감지할 수 없으면(null) 막지 않는다`() {
         device.ap = null
         assertEquals(OnboardingScreen.Greeting, onboarding().screen)
+    }
+
+    @Test
+    fun `AP를 모르는 기기에서 접근성 2번 실패하면 분기 A에 보조 문구 표시(분기 B로 보내지 않음, D68 ②)`() {
+        device.notifications = true
+        device.ap = null
+        val o = onboarding()
+        o.next(); o.accept(); o.chooseHelp(HelpMode.ALONE)
+        o.onReturnedFromSettings(); o.onReturnedFromSettings()
+        assertEquals(OnboardingScreen.AskFamily(protectionUnknown = true), o.screen)
+        assertEquals("먼저 접근성에서 이 앱을 켜 주세요.", o.startBlocker())
+    }
+
+    @Test
+    fun `AP가 켜져 있어도 접근성 서비스가 살아 있으면 막지 않는다(D68 ②)`() {
+        device.ap = true
+        device.notifications = true
+        device.accessibility = true
+        val o = onboarding()
+        assertEquals(OnboardingScreen.Greeting, o.screen)
+        o.next(); o.accept(); o.chooseHelp(HelpMode.ALONE)
+        assertEquals(OnboardingScreen.Ready, o.screen)
+        assertNull(o.startBlocker())
+        device.accessibility = false // 사용 중 회수되면 그때부터 분기 B 문구
+        assertEquals(Onboarding.PROTECTED_TEXT, o.startBlocker())
+    }
+
+    @Test
+    fun `분기 B 문구는 보호 기능을 끄라고 하지 않고 보호자 확인을 권한다(D68 ②)`() {
+        val t = Onboarding.PROTECTED_TEXT
+        assertTrue("보호자" in t || "가족" in t, t)
+        assertTrue(listOf("끄세요", "꺼 주세요", "해제하세요", "해제해 주세요").none { it in t }, t)
+    }
+
+    @Test
+    fun `분기 B에서 상태가 바뀌어 돌아오면 멈췄던 단계부터 이어 간다`() {
+        device.ap = true
+        val o = onboarding()
+        assertEquals(OnboardingScreen.Protected, o.screen)
+        o.recheckProtection()
+        assertEquals(OnboardingScreen.Protected, o.screen, "그대로면 남는다")
+        device.ap = false
+        o.recheckProtection()
+        assertEquals(OnboardingScreen.Greeting, o.screen)
+
+        // 동의·가족 단계 뒤 설정에서 돌아오다 분기 B로 간 경우 → 알림 단계부터
+        device.ap = null
+        val p = onboarding()
+        p.next(); p.accept(); p.chooseHelp(HelpMode.ALONE)
+        device.notifications = true
+        p.onNotificationResult(true)
+        device.ap = true
+        p.onReturnedFromSettings()
+        assertEquals(OnboardingScreen.Protected, p.screen)
+        device.accessibility = true
+        p.recheckProtection()
+        assertEquals(OnboardingScreen.Ready, p.screen)
     }
 
     @Test

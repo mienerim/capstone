@@ -8,7 +8,7 @@ import android.content.Context
 import android.content.Intent
 
 /**
- * 고정 알림(D39·D41): 대상 앱이 앞에 있는 동안 진행 안내는 알림 글자로, 멈춤은 알림 탭으로.
+ * 진행 알림(D39·D41, D69: 사용자가 지울 수 있다는 전제 — setOngoing이어도 Android 14+는 스와이프 해제 가능): 대상 앱이 앞에 있는 동안 진행 안내는 알림 글자로, 멈춤은 알림 탭으로.
  * 탭과 '멈춰' 버튼 모두 PendingIntent.getActivity로 우리 Activity를 직접 연다(트램폴린 금지, Android 12+).
  * deleteIntent 재게시·creator opt-in(BAL)은 10-28 W02 실측과 함께 붙인다.
  */
@@ -49,8 +49,8 @@ class ProgressNotice(private val context: Context) {
 
     fun hide() = nm.cancel(ID)
 
-    private companion object {
+    companion object {
         const val CHANNEL = "progress"
-        const val ID = 1
+        private const val ID = 1
     }
 }
