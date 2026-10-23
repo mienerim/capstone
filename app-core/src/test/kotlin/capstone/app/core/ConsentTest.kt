@@ -37,9 +37,15 @@ class ConsentTest {
     @Test
     fun `고지 문구에 필수 요소가 모두 있다`() {
         val all = Disclosure.sections.joinToString(" ") { it.title + " " + it.body }
-        // 읽는 데이터 · 사용 방식(정지 지점) · 외부 전송 없음 · 이유 · 알림·비tool 알림 안내
-        listOf("글자와 버튼", "예매하기", "인터넷 권한이 없고", "대신 처리", "알림", "비밀번호").forEach {
+        // 읽는 데이터 · 사용 방식(정지 지점) · 외부 전송 범위 · 이유 · 끄는 법 · 알림·비tool 알림 안내
+        listOf("글자와 버튼", "예매하기", "화면 내용을 밖으로 보내지 않아요", "별개", "대신 처리", "끄는 법", "설정 > 접근성", "알림", "비밀번호").forEach {
             assertTrue(it in all, "고지에 '$it' 없음")
         }
+    }
+
+    @Test
+    fun `기내모드 실측 전에는 '아무 데도 보내지 않는다'고 단정하지 않는다(D66 ②)`() {
+        val all = Disclosure.sections.joinToString(" ") { it.body }
+        assertFalse("아무 데도 보내지 않" in all)
     }
 }

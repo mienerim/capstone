@@ -2,6 +2,7 @@ package capstone.app
 
 import android.Manifest
 import android.app.Activity
+import android.app.ActivityManager
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.graphics.Typeface
@@ -22,7 +23,11 @@ import capstone.agent.RunState
 import capstone.app.core.AppScreen
 import capstone.app.core.AppSession
 import capstone.app.core.Disclosure
+import capstone.app.core.HelpMode
+import capstone.app.core.Onboarding
+import capstone.app.core.OnboardingScreen
 import capstone.app.core.Scenario
+import capstone.llm.ContextBudget
 import capstone.llm.GuardedGenerator
 import capstone.llm.Intent as SlotIntent
 import capstone.llm.ParseResult
@@ -42,6 +47,7 @@ import java.io.File
 class MainActivity : Activity() {
 
     private lateinit var session: AppSession
+    private lateinit var onboarding: Onboarding
     private lateinit var host: AgentHost
     private lateinit var notice: ProgressNotice
     private val main = Handler(Looper.getMainLooper())
@@ -49,18 +55,39 @@ class MainActivity : Activity() {
     private val llm = Handler(llmThread.looper)
     private var parser: SlotParser? = null
     private var busy = false
+    private var wentToSettings = false
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         notice = ProgressNotice(this)
         host = AgentHost(filesDir) { st -> onRunState(st) }
+        val store = PrefsStore(this)
+        onboarding = Onboarding(store, AndroidDeviceChecks(this))
         session = AppSession(
-            PrefsStore(this),
+            store,
             scenarioFor = { s -> if (s.intent == SlotIntent.TRAIN_BOOK) Scenario(MockKorailFlow.flow, liveService = false) else null },
             startRunner = host::start,
         )
         handlePause(intent)
         render()
+    }
+
+    /** ⑤ 접근성 설정에서 돌아오면 켜졌는지 확인한다(D66 ⑦ 활성 자동 검사). */
+    override fun onResume() {
+        super.onResume()
+        if (wentToSettings) {
+            wentToSettings = false
+            onboarding.onReturnedFromSettings()
+            render()
+        }
+    }
+
+    override fun onRequestPermissionsResult(requestCode: Int, permissions: Array<out String>, grantResults: IntArray) {
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults)
+        if (requestCode == REQ_NOTIFICATIONS && onboarding.screen is OnboardingScreen.Notifications) {
+            onboarding.onNotificationResult(grantResults.firstOrNull() == PackageManager.PERMISSION_GRANTED)
+            render()
+        }
     }
 
     override fun onNewIntent(intent: Intent) {
@@ -102,7 +129,7 @@ class MainActivity : Activity() {
     // ---- 그리기 ----
 
     private fun render() {
-        val content: List<View> = when (val s = session.screen) {
+        val content: List<View> = if (!onboarding.isDone) onboardingViews(onboarding.screen) else when (val s = session.screen) {
             is AppScreen.Consent -> consent(s)
             is AppScreen.Home -> home(s)
             is AppScreen.AskSlot -> listOf(title(s.question)) + s.options.map { o -> big(o) { session.choose(o); render() } }
@@ -120,24 +147,82 @@ class MainActivity : Activity() {
         setContentView(ScrollView(this).apply { addView(column(content)) })
     }
 
+    /** 온보딩 이후에는 나오지 않는다(온보딩 ②가 같은 동의를 기록). 남겨 둔 것은 동의가 지워진 경우의 방어선. */
     private fun consent(s: AppScreen.Consent): List<View> = buildList {
         add(title(Disclosure.title))
         Disclosure.sections.forEach { add(body("■ ${it.title}\n${it.body}")) }
         if (s.declined) add(body("동의하지 않으시면 이 앱을 쓸 수 없어요. 앱을 닫으셔도 됩니다."))
-        add(big(Disclosure.ACCEPT) {
-            session.acceptConsent()
-            if (checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED) {
-                requestPermissions(arrayOf(Manifest.permission.POST_NOTIFICATIONS), 0)
-            }
-            render()
-        })
+        add(big(Disclosure.ACCEPT) { session.acceptConsent(); render() })
         add(big(Disclosure.DECLINE) { session.declineConsent(); render() })
+    }
+
+    /** 첫 실행 온보딩 v1(D66). 문구는 가안, 접근성 메뉴 그림은 실기기 캡처 3장으로 교체 예정. */
+    private fun onboardingViews(s: OnboardingScreen): List<View> = when (s) {
+        OnboardingScreen.Greeting -> listOf(title(Onboarding.GREETING_TEXT), big("다음") { onboarding.next(); render() })
+        is OnboardingScreen.Disclosure -> buildList {
+            add(title(Disclosure.title))
+            Disclosure.sections.forEach { add(body("■ ${it.title}\n${it.body}")) }
+            if (s.declined) add(body("동의하지 않으시면 이 앱을 쓸 수 없어요. 앱을 닫으셔도 됩니다."))
+            add(big(Disclosure.ACCEPT) { onboarding.accept(); render() })
+            add(big(Disclosure.DECLINE) { onboarding.decline(); render() })
+        }
+        OnboardingScreen.Family -> listOf(
+            title("누구와 함께 설정하시나요?"),
+            big("혼자 할게요") { onboarding.chooseHelp(HelpMode.ALONE); render() },
+            big("가족과 함께 할게요") { onboarding.chooseHelp(HelpMode.WITH_FAMILY); render() },
+        )
+        is OnboardingScreen.Notifications -> buildList {
+            add(title("진행 상황을 알림으로 알려 드려요. 알림의 '그만'으로 언제든 멈출 수 있어요."))
+            if (s.denied) add(body("알림을 허용해야 시작할 수 있어요. 다시 눌러 허용해 주세요. 안 되면 설정 > 알림에서 켜 주세요."))
+            add(big("알림 허용하기") { requestPermissions(arrayOf(Manifest.permission.POST_NOTIFICATIONS), REQ_NOTIFICATIONS) })
+        }
+        is OnboardingScreen.Accessibility -> buildList {
+            add(title("이제 '접근성'에서 이 앱을 켜 주세요."))
+            add(body("① 설정으로 가기를 누르세요\n② '설치된 앱'을 누르세요\n③ 이 앱 이름을 누르세요\n④ 스위치를 켜세요\n⑤ '허용'을 누르세요\n⑥ 뒤로 가기를 눌러 돌아오세요"))
+            if (s.failures > 0) add(body("아직 꺼져 있어요. 한 번 더 해 볼까요?"))
+            add(big("설정으로 가기") { openAccessibilitySettings() })
+            add(big("스위치가 안 눌려요") { onboarding.switchBlocked(); render() })
+        }
+        OnboardingScreen.RestrictedSettings -> listOf(
+            title("스위치가 안 눌리면 먼저 이렇게 해 주세요."),
+            body("설정 > 애플리케이션 > 이 앱 > 오른쪽 위 ⋮ > '제한된 설정 허용'을 누른 뒤, 다시 접근성에서 켜 주세요."),
+            big("설정으로 가기") { openAccessibilitySettings() },
+            big("처음 안내로") { onboarding.retry(); render() },
+        )
+        OnboardingScreen.AskFamily -> listOf(
+            title("설정이 어려우시면 가족에게 도움을 청해 보세요."),
+            big("가족에게 안내 보내기") { shareGuide() },
+            big("다시 해 볼게요") { onboarding.retry(); render() },
+            big("스위치가 안 눌려요") { onboarding.switchBlocked(); render() },
+        )
+        OnboardingScreen.Ready -> listOf(
+            title("켜졌어요! 결제 없이 연습을 한 번 해 볼까요?"),
+            big("연습해 보기") { onboarding.finish(); session.reset(); session.startWithButtons(); render() },
+            big("나중에 할게요") { onboarding.finish(); session.reset(); render() },
+        )
+        OnboardingScreen.Protected -> listOf(
+            title(Onboarding.PROTECTED_TEXT),
+            body("이 보호 기능을 끄고 쓰시라고 권하지 않아요. 가족이나 휴대폰 판매처에 문의해 주세요."),
+        )
+        OnboardingScreen.Done -> emptyList()
+    }
+
+    private fun openAccessibilitySettings() {
+        wentToSettings = true
+        startActivity(Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS))
+    }
+
+    /** 분기 A: 안내 글을 가족에게(공유 시트). 이미지는 메뉴 캡처가 생기면 붙인다. 이 앱이 직접 보내지 않는다. */
+    private fun shareGuide() {
+        val text = "부모님 휴대폰에서 '말로 기차표 찾기' 앱의 접근성을 켜 주세요: 설정 > 접근성 > 설치된 앱 > 이 앱 > 켜기 > 허용. " +
+            "스위치가 안 눌리면 설정 > 애플리케이션 > 이 앱 > ⋮ > '제한된 설정 허용' 뒤 다시 켜기."
+        startActivity(Intent.createChooser(Intent(Intent.ACTION_SEND).setType("text/plain").putExtra(Intent.EXTRA_TEXT, text), "안내 보내기"))
     }
 
     private fun home(s: AppScreen.Home): List<View> = buildList {
         add(title("어디 가는 기차를 찾을까요?"))
         s.message?.let { add(body(it)) }
-        if (!host.ready) add(big("먼저 접근성 켜기") { startActivity(Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS)) })
+        if (!host.ready) add(big("먼저 접근성 켜기") { openAccessibilitySettings() })
         val input = EditText(this@MainActivity).apply {
             hint = "예: 내일 부산 가는 KTX 예매해 줘"
             setTextSize(TypedValue.COMPLEX_UNIT_SP, 24f)
@@ -162,8 +247,9 @@ class MainActivity : Activity() {
     // ---- 동작 ----
 
     private fun startRun() {
-        if (!host.ready) {
-            session.reset("먼저 '접근성 켜기'를 눌러 이 앱을 켜 주세요.")
+        // D62: 알림·접근성이 없거나 Advanced Protection이 켜져 있으면 시작하지 않는다.
+        onboarding.startBlocker()?.let {
+            session.reset(it)
             render()
             return
         }
@@ -205,7 +291,10 @@ class MainActivity : Activity() {
         val model = File(getExternalFilesDir(null), MODEL_FILE).takeIf { it.isFile }
             ?: File(filesDir, MODEL_FILE).takeIf { it.isFile }
             ?: return null
-        return SlotParser(GuardedGenerator(LiteRtLmRunner(model, cacheDir))).also { parser = it }
+        // D65: KV 한도는 기기 RAM으로(8GB급 4096 후보, 그 아래 2048).
+        val mem = ActivityManager.MemoryInfo().also { getSystemService(ActivityManager::class.java).getMemoryInfo(it) }
+        val runner = LiteRtLmRunner(model, cacheDir, maxNumTokens = ContextBudget.maxNumTokens(mem.totalMem))
+        return SlotParser(GuardedGenerator(runner)).also { parser = it }
     }
 
     // ---- 위젯 ----
@@ -240,6 +329,7 @@ class MainActivity : Activity() {
 
     companion object {
         const val EXTRA_PAUSE = "pause"
+        private const val REQ_NOTIFICATIONS = 1
 
         /** D40: adb push 위치(getExternalFilesDir) 또는 run-as 폴백(filesDir). */
         const val MODEL_FILE = "gemma-3n-E2B-it-int4.litertlm"
