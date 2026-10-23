@@ -22,7 +22,7 @@
 | `llm/core` | 순수 Kotlin | 슬롯 스키마 v1·검증기·`LlmRunner` 인터페이스·워치독·2단계 파서(`SlotParser`), D18 T1~T8 llm 쪽 | C |
 | `llm/litertlm` | Android | LiteRT-LM 어댑터(`litertlm-android` 0.18.0 고정, **미빌드**: API 이름 10-26 확인) | C |
 | `app-scenarios` | 순수 Kotlin | 앱별 화면 서명·시나리오(목업 `MockKorail`·`MockKorailFlow`, 코레일+는 10-27 덤프 뒤) | A |
-| `service/core` | 순수 Kotlin | 트리 캡처(`TreeCapture`, 한도 초과 시 빈 트리)·`FrameActuator`(`RawActuator`: treeHash·refresh 확인 뒤 실행)·덤프 마스킹/기록(`DumpRecorder`) | A |
+| `service/core` | 순수 Kotlin | 트리 캡처(`TreeCapture`, 한도 초과 시 빈 트리, 허용목록 밖 창은 비순회)·이벤트 필터/집계(`EventFilter`·`EventTally`, D63)·`FrameActuator`(`RawActuator`: treeHash·refresh 확인 뒤 실행)·덤프 마스킹/기록(`DumpRecorder`) | A |
 | `service/android` | Android | `DumperService`(AccessibilityService, 화면 변경 시 `filesDir/dump.jsonl`)·노드 어댑터·제스처, **미빌드** | A |
 | `snapshot` | 순수 Kotlin | 저장 트리 JSONL v0 코덱(덤퍼가 쓰고 재생기가 읽음) | B |
 | `app-core` | 순수 Kotlin | 앱 흐름 판단: 첫 실행 고지·동의(D25)·D17 일일 한도·버튼/발화 → 슬롯 채우기 → 복창·확인 → 실행 안내(`AppSession`), 매니페스트 정책 테스트 | C |
@@ -45,6 +45,24 @@
 - `capstone.android=auto|true|false`(gradle.properties). auto는 Android SDK가 보이면 Android 모듈을 포함한다.
 - 모델 파일(`*.litertlm`)은 저장소에 넣지 않는다. 기기에 `adb push`로 올린다(D40, [`docs/FIRST-DAY.md`](docs/FIRST-DAY.md)).
 - 빌드 후 `aapt dump permissions app-debug.apk`로 INTERNET 권한이 없는지 확인한다.
+
+## 현재 상태 (2026-10-23)
+
+- 순수 Kotlin 모듈은 클라우드 개발 루틴이 매 회차 빌드·테스트한다(`./gradlew -Pcapstone.android=false test`, 회차별 결과는 [`docs/ENV.md`](docs/ENV.md)).
+- Android 모듈(`service/android`·`llm/litertlm`·`app`·`mock-app`)은 클라우드에서 Google Maven이 막혀 **한 번도 컴파일되지 않았다**.
+  10-26 팀 PC에서 처음 빌드한다([`docs/FIRST-DAY.md`](docs/FIRST-DAY.md) 1절).
+- 코레일+ 화면 서명·시나리오는 아직 없다(10-27 덤프 뒤). 지금 시나리오는 목업 앱(`capstone.mock`)만 대상이다.
+
+## 문서
+
+| 문서 | 내용 |
+| --- | --- |
+| [`docs/FIRST-DAY.md`](docs/FIRST-DAY.md) | 10-26 첫날 체크리스트: 빌드·기기 준비·덤프 1장·D63 이벤트 비교·모델 로드 |
+| [`docs/DECISIONS-IMPL.md`](docs/DECISIONS-IMPL.md) | 결정 로그를 코드로 옮기며 고른 해석(I-번호). 리뷰·보정 대상 |
+| [`docs/PLAN-CHECK.md`](docs/PLAN-CHECK.md) | 상세 ⑥ 1주차 계획 ↔ 코드 대조표(✅/🔧/⏳) |
+| [`docs/ENV.md`](docs/ENV.md) | 회차별 빌드 환경·테스트 수, 팀 PC 기록 칸 |
+| [`docs/measurements/week1.csv`](docs/measurements/week1.csv) | 1주차 실측표(상세 ⑥ 8절 19열) |
+| [`tools/README.md`](tools/README.md) · [`mock-app/README.md`](mock-app/README.md) | 재생기·결함 주입·mask-lint 사용법 / 목업 화면·변형 스위치 |
 
 ## 역할 (D37 안 1)
 

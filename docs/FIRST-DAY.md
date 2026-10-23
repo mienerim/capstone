@@ -73,6 +73,26 @@ adb install -r mock-app/build/outputs/apk/debug/mock-app-debug.apk
 기기 안에서 휴대폰·주민번호·카드번호·이메일·8자리 이상 숫자와 입력칸·data-sensitive 값은 `[MASK]`로 바뀌지만,
 **이름·주소는 못 잡는다** → 커밋하려면 사람이 한 줄씩 보고 지운 뒤 `tools/fixtures/`에 넣는다.
 
+## 3-1. D63 이벤트 수신 비교 (A, 시간이 남으면)
+
+D63 ④(b): `packageNames`를 비웠을 때(기본)와 지정했을 때 받는 이벤트, 특히 패키지가 null인 `TYPE_WINDOWS_CHANGED`를
+비교한다. AOSP 원문상 지정하면 이 이벤트가 전부 탈락한다(RQ-61) — One UI에서도 그런지 확인하는 실측이다.
+DumperService가 30초마다·종료 시 이벤트 수를 **종류/출처(TARGET·NULL_PACKAGE·OTHER_APP)로만** 찍는다(`EventTally`, 다른 앱 이름은 안 남김).
+
+```bash
+adb logcat -c && adb logcat -s DumperService | grep events
+# 목업 S1 → S2 → 뒤로 → 알림창 내렸다 올리기 → 키보드 열기를 2분 동안 반복
+```
+
+1. 기본(비움) 상태로 위 절차 → `events ...` 줄 기록
+2. `service/android/src/main/res/xml/accessibility_service_config.xml`에 **임시로**
+   `android:packageNames="capstone.mock"`을 넣고 다시 설치 → 접근성 끄고 켜기 → 같은 절차 → 기록
+3. 설정 파일을 **원래대로 되돌린다**(커밋 금지)
+
+- [ ] 비움: `WINDOWS_CHANGED/NULL_PACKAGE`가 0보다 큰지 / 지정: 0인지
+- [ ] 지정했을 때 알림창·키보드 전환 뒤 덤프(`dump s..._000n`)가 빠지는지
+- [ ] 결과를 week1.csv에 한 줄(`affected_D`=D63, 두 경우의 `events` 줄을 `actual_summary`에). 비움에서도 0이면 HOLD → B와 EventFilter 재검토
+
 ## 4. 모델 로드 체크 5줄 (C, W03, D40)
 
 ```bash
@@ -83,7 +103,7 @@ unzip -p litertlm-android-0.18.0.aar classes.jar > c.jar && unzip -l c.jar | gre
 huggingface-cli download google/gemma-3n-E2B-it-litert-lm gemma-3n-E2B-it-int4.litertlm --local-dir ./models
 ls -l models/; sha256sum models/*.litertlm
 # ③ INTERNET 없음 (1절 aapt)
-# ④ 앱 1회 실행(files/ 생성) 뒤 push. (app 화면(백로그 ⑧)이 아직 없으면 adb shell mkdir -p /sdcard/Android/data/capstone.app/files) 거부되면 /data/local/tmp + run-as 복사
+# ④ 앱 1회 실행(files/ 생성) 뒤 push. 폴더가 없으면 adb shell mkdir -p /sdcard/Android/data/capstone.app/files, 거부되면 /data/local/tmp + run-as 복사
 adb push ./models/gemma-3n-E2B-it-int4.litertlm /sdcard/Android/data/capstone.app/files/
 #   adb push ./models/gemma-3n-E2B-it-int4.litertlm /data/local/tmp/ && adb shell run-as capstone.app cp /data/local/tmp/gemma-3n-E2B-it-int4.litertlm files/
 # ⑤ EngineConfig(modelPath, cacheDir) initialize → 1·2회차 로드 시간, 한 문장 생성 성공이면 통과 (CPU 먼저, Snapdragon만 GPU 추가)

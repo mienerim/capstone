@@ -1,4 +1,4 @@
-# 1주차 계획 ↔ 코드 대조 (7회차, 2026-10-23 / 8회차 보충)
+# 1주차 계획 ↔ 코드 대조 (7회차, 2026-10-23 / 8·9회차 보충)
 
 Notion '상세 ⑥ 개발 계획(역할·1~2주차)'(10-23 14시판)과 `claude/dev` 코드를 맞춰 본 결과. 
 ✅ 일치 / 🔧 이번 회차에 고침 / ⏳ 실측·합의 뒤 코드에 반영 / 📝 이름만 다름(동작 같음).
@@ -30,5 +30,6 @@ Notion '상세 ⑥ 개발 계획(역할·1~2주차)'(10-23 14시판)과 `claude/
 | 안건 8 보강: 미리 채운 열차가 SRT·매진이어도 누르지 않음 | `ask` 단계가 미리 채운 값을 지금 보기로 다시 확인 + SRT 재생기 픽스처 | 🔧 (8회차, I-57) |
 | D62 숨김 상태 기본 호출 = 진행 중 알림 '계속/그만', setDeleteIntent 재게시 | `ProgressNotice`는 있음, 액션·재게시·5분 TTS 질문은 B가 W02와 함께 | ⏳ |
 | D63 ② packageNames 비움 + 이벤트 필터 + 허용목록 밖 순회 금지 | `EventFilter`·`TreeCapture(targetPackages)`·`DumperService.TARGET_PACKAGES` | 🔧 (8회차, I-58, android 쪽 미빌드) |
+| D63 ④(b) packageNames 지정/비움 수신 비교(실측) | `EventTally` 집계 + `DumperService` 30초 로그, 절차는 FIRST-DAY 3-1 | 🔧 (9회차, I-61, 실측은 A) |
 | D63 ① 직접 startActivity는 보조·실측 비교용 | 코드 없음(기본은 알림 경로) | ✅ |
 | D64 llama.cpp 대안 경로 | 실험 브랜치 전용이라 `claude/dev`에 없음 | ⏳ (I-60) |
