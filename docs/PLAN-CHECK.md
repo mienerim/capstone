@@ -74,3 +74,17 @@ Notion '상세 ⑥ 개발 계획(역할·1~2주차)'(7회차 14시판, 10회차�
 | D70 ③ 건강정보 GitHub 금지 | `mask-lint` 기관명에 약국·보건소 추가 | 🔧 |
 | D70 검증: logcat·LLM 입출력 로그 마스킹 | llm·app-core·app 로그 호출 0개를 `LogPolicyTest`로 고정 | 🔧 (I-67) |
 | D70 ② 비로그인 → 가상 프로필 → 목업, 본인인증부터 목업 | 병원 시나리오 없음(I-47) | ⏳ (10-28 C 드라이런 뒤) |
+
+## 12회차: 결정 로그 10-24 00시(D71·D72·D73·D13 정정) 대조
+
+상세 ⑥(개발 계획)에는 아직 10-24 00시 반영이 없어 결정 로그 원문과 직접 대조했다.
+
+| 결정 | 코드 | 상태 |
+| --- | --- | --- |
+| D71 QUERY_ADVANCED_PROTECTION_MODE = normal(AOSP), 호출 실패는 불명 | 매니페스트 권한·`advancedProtection()` null 가드 | ✅ (미빌드, 갤럭시 반환은 W09) |
+| D71 AP 켜짐 = 지원 대상 밖, 분기 B '안내 후 중단'·조건부 문구 | `blockedByProtection()` = AP true, `PROTECTED_TEXT` '…수 있어서, 여기서 멈출게요' | 🔧 (I-70, I-68 대체) |
+| D72 BAL 주석 2줄, 추가 리서치·코드 없음 | `MainActivity.bringToFront()` 주석 | 🔧 (I-71) |
+| D73 ① 1초 안 확인음+'생각 중' ② 3초 필러 1회 ③ 10초 선택지 ④ 25초 안전 중단 | `WaitFeedback`·`AppSession.beginParsing/onWaitTick/answerWait`·MainActivity 틱 | 🔧 (I-72, android 쪽 미빌드) |
+| D73 음성+문구 병행 | 확인음·글자만, 필러 음성은 TTS와 함께 | ⏳ (W03) |
+| D73 W12 판정(첫 피드백 p95 ≤ 1초, 복창 p50 ≤ 8초·p95 ≤ 10초) | 측정 시트 몫, 단계값은 `Timing` | ⏳ (W12) |
+| D13 정정: 8GB는 STT 언로드 직후 initialize, 선로드 금지 | 파싱 요청 때 첫 로드(이미 그 구조), 주석으로 순서 고정 | 🔧 (I-73, STT 붙일 때 강제) |
