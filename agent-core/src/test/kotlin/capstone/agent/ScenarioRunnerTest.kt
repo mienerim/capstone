@@ -180,6 +180,17 @@ class ScenarioRunnerTest {
     }
 
     @Test
+    fun `화면을 보기 전에 멈췄다가 계속하면 처음 단계부터 정상 진행`() {
+        val h = Harness()
+        h.runner.pauseForUser()
+        assertIs<RunState.PausedForUser>(h.runner.tick())
+        assertTrue(h.app.raw.isEmpty())
+        h.runner.resumeFromPause()
+        h.runToAsk()
+        assertFalse(h.kinds.any { it == "stopped" })
+    }
+
+    @Test
     fun `ASK_USER 중 일시정지, 복귀 화면이 다르면 재탐색`() {
         val h = Harness()
         h.runToAsk()

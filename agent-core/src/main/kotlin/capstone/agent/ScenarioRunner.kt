@@ -145,7 +145,8 @@ class ScenarioRunner(
     fun resumeFromPause() {
         val s = state as? RunState.PausedForUser ?: error("PAUSED_FOR_USER가 아님: $state")
         pauseRequested = false
-        resumeCheck = s.lastScreen ?: Screens.UNKNOWN
+        // 한 번도 화면을 보기 전에 멈췄으면 비교할 서명이 없다: 그 단계의 pre-check·복구 사다리가 그대로 판단한다.
+        resumeCheck = s.lastScreen
         state = RunState.Running(s.step)
         event(s.step, "resume")
     }

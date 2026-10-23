@@ -34,6 +34,7 @@ include(
     ":agent-core",
     ":llm:core",
     ":app-scenarios",
+    ":app-core",
     ":snapshot",
     ":service:core",
     ":tools",
