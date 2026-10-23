@@ -35,7 +35,7 @@ sealed interface OnboardingScreen {
     /** ⑥ 스위치가 안 눌릴 때만: 제한된 설정 허용 안내. */
     data object RestrictedSettings : OnboardingScreen
 
-    /** ⑦ 켜졌어요 + 결제 없는 연습 1회. */
+    /** ⑦ 켜졌어요 + 24시간 경고 사전 안내(D74 ③) + 결제 없는 연습 1회. */
     data object Ready : OnboardingScreen
 
     /**
@@ -200,6 +200,16 @@ class Onboarding(
         const val PROTECTED_TEXT =
             "휴대폰의 '고급 보호' 기능이 켜져 있어요. 고급 보호가 켜져 있으면 이 앱의 화면 도움이 막히거나 꺼질 수 있어서, 여기서 멈출게요. " +
                 "휴대폰을 지키는 기능이니 혼자 끄지 마시고, 가족이나 보호자와 함께 확인해 주세요."
+
+        /**
+         * ⑦ 활성 확인 뒤 사전 안내(D74 ③, 가안). 비tool 접근성 서비스는 바인드 24시간 뒤 시스템 경고가 1회 뜬다(AOSP
+         * PolicyWarningUIController). 사실만 전하고 '닫으세요'처럼 지시하지 않는다. 실제 문구는 W09 캡처로 교체.
+         */
+        const val WARNING_NOTICE_TEXT =
+            "하루쯤 뒤 '이 앱이 화면을 읽고 누른다'는 알림이 한 번 올 수 있어요. 직접 켠 기능이 맞다면 그대로 두셔도 됩니다."
+
+        /** D74 ③: 경고를 눌러 설정 화면으로 갔을 때. 스위치를 끄면 경고 기록이 지워져 다시 뜬다(D74 ②). 그림은 W09 캡처 뒤. */
+        const val WARNING_SWITCH_TEXT = "그 알림을 눌러 설정 화면이 나오면, 스위치는 켜진 그대로 두고 뒤로 가기를 누르세요."
 
         /** 분기 A 보조 문구(D68 ②): AP를 확인할 수 없는 기기(API 34·35, 권한·예외). */
         const val AP_UNKNOWN_HINT = "휴대폰의 '고급 보호' 기능이 켜져 있으면 이 앱이 제한될 수 있어요."

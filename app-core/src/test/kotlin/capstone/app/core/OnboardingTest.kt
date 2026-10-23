@@ -181,6 +181,17 @@ class OnboardingTest {
     }
 
     @Test
+    fun `24시간 경고 사전 안내는 사실만 전하고 닫거나 끄라고 지시하지 않는다(D74 ③)`() {
+        val notice = Onboarding.WARNING_NOTICE_TEXT
+        assertTrue("한 번" in notice && "수 있어" in notice, notice) // 1회·조건부(One UI 유지 여부는 W09)
+        assertTrue("그대로" in notice, notice)
+        val switch = Onboarding.WARNING_SWITCH_TEXT
+        assertTrue("켜진 그대로" in switch, switch)
+        val forbidden = listOf("닫으세요", "닫아 주세요", "끄세요", "꺼 주세요", "해제하세요", "무시하세요")
+        for (t in listOf(notice, switch)) assertTrue(forbidden.none { it in t }, t)
+    }
+
+    @Test
     fun `분기 B에서 상태가 바뀌어 돌아오면 멈췄던 단계부터 이어 간다`() {
         device.ap = true
         val o = onboarding()

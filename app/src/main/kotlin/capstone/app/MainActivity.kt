@@ -215,6 +215,8 @@ class MainActivity : Activity() {
         )
         OnboardingScreen.Ready -> listOf(
             title("켜졌어요! 결제 없이 연습을 한 번 해 볼까요?"),
+            body(Onboarding.WARNING_NOTICE_TEXT),
+            body(Onboarding.WARNING_SWITCH_TEXT),
             big("연습해 보기") { onboarding.finish(); session.reset(); session.startWithButtons(); render() },
             big("나중에 할게요") { onboarding.finish(); session.reset(); render() },
         )
