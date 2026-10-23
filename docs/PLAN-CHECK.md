@@ -125,3 +125,16 @@ Notion '상세 ⑥ 개발 계획(역할·1~2주차)'(7회차 14시판, 10회차�
 | D78 팀 직접 확인 최종본 14건·킥오프 A1~A13 | FIRST-DAY 0절에 처리 항목, 개발 해석 I-5~I-11·I-62·I-70·I-72·I-74·I-78·I-79를 같은 회의로 | ⏳ (팀 10-26) |
 | D78 코레일 서면 문의 B 1통 | 코드 없음 | ⏳ (팀) |
 | 미해결 E P1: .litertlm 고정 KV(예: `_ekv1280`)와 2048의 관계 | 코드 없음. Gemma 3n 파일이 고정 KV면 maxNumTokens보다 파일 값이 우선일 수 있음 → W03에서 `litert-lm-peek`로 확인 | ⏳ (W03, C) |
+
+## 16회차: 결정 로그 10-24 08시(D79) 대조
+
+| 계획 항목 | 코드 | 상태 |
+| --- | --- | --- |
+| D79 요청값 2048 유지, 실효 예산 = min(2048, 파일 KV) | `ContextBudget.effective(fileKv)` → `Budget(requested, fileKv, effective)`, `LiteRtLmRunner.budget` | 🔧 (I-80, litertlm·app 미빌드) |
+| D79 파일 KV는 엔진 생성 전 `ModelInfo.from(path).maxContextTokens()` | 지금은 파일명 표지(`_ekv1280`)만 `ContextBudget.fileKvFromName`, Gemma 3n은 null(추정값 금지) | ⏳ (10-26 AAR 노출 확인, 없으면 peek 상수) |
+| D79 1·2단계 각각 '프롬프트 토큰 + 384 ≤ 실효 예산' 사전 검사, 초과 시 실행 0 | `SlotParser` 단계 앞 `ContextBudget.fitsStage` → `AskAgain(budget_exceeded)`, 생성 0회 + 테스트 | 🔧 (계수기는 보수적 어림, I-80) |
+| D79 프롬프트 토큰 = 모델 토크나이저(템플릿 포함) | `PromptTokenCounter` 포트, 기본 `ConservativeTokenEstimate`(과대 어림) | ⏳ (W03 기기 토크나이저) |
+| D79 실효 예산을 로그·실험 CSV 필수 열로 | `Budget.csv()` = `요청,파일KV,실효`. 로그 금지(D70·I-67)라 logcat이 아니라 week1.csv `measured_value`에 사람이 적는다 | 🔧 (FIRST-DAY 4절) |
+| D79 A34 Qwen3 ekv1280 = 실효 1280·입력 약 896, 짧은 프롬프트 | 현 프롬프트는 2단계 기차 어림 약 1,325 → Qwen 예산 초과를 테스트로 기록(사전 검사가 막음) | ⏳ (팀 A12: 두 벌 vs 공통 짧은 판) |
+| D79 D77 상향(>1,400 → 3072)은 파일 KV ≥ 3072일 때만 | `shouldTryRaise(..., fileKv)` — 3072 미만 확인이면 false | 🔧 |
+| D57 주석: 첫날 peek 표에 max_num_tokens·prefill 시그니처, 'Using model limit' 경고 | FIRST-DAY 4절 항목 | 🔧 (문서) |

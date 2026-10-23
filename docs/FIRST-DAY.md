@@ -20,8 +20,8 @@
 - [ ] 10-26 전 합의 6항목(결정 트리·승인 범위·계정 명의·기기 순서·gate/결함 작성자 분리·병합 규칙) 회의록 링크
 - [ ] `CODEOWNERS`에 A/B/C GitHub 아이디 기입
 - [ ] 팀원 각자 Hugging Face에서 Gemma 약관 동의
-- [ ] 킥오프 안건 A1~A13(상세 ⑥ 10-24 06시 절)과 함께 개발 백로그 해석 I-5~I-11·I-62·I-70·I-72·I-74·I-78·I-79 처리.
-      A12(토큰 한도)는 코드가 이미 2048 단일(I-79) — 되돌리려면 `ContextBudget.MAX_NUM_TOKENS` 한 줄
+- [ ] 킥오프 안건 A1~A13(상세 ⑥ 10-24 06시 절)과 함께 개발 백로그 해석 I-5~I-11·I-62·I-70·I-72·I-74·I-78·I-79·I-80 처리.
+      A12(토큰 한도)는 코드가 이미 요청값 2048 단일(I-79) + 실효 예산 min(2048, 파일 KV)·단계 사전 검사(D79, I-80). A12 안건 = 모델별 실효 예산 표와 A34 Qwen용 짧은 프롬프트(두 벌 vs 공통 판)
 - [ ] 팀 직접 확인 최종본 14건(이전 11건·STT 6건 표기를 대체) 담당·기한을 회의록에 적는다
 
 ## 1. 빌드 (B, 팀 PC)
@@ -136,7 +136,12 @@ adb push ./models/gemma-3n-E2B-it-int4.litertlm /sdcard/Android/data/capstone.ap
 - [ ] (15회차, D77) KV 한도는 전 기기 `ContextBudget.MAX_NUM_TOKENS` = 2048. 로드 뒤 PSS(`adb shell dumpsys meminfo capstone.app`)를 적는다
 - [ ] (D77) **최종 렌더링 입력 토큰 수**: 채팅 템플릿 적용 뒤 1단계·2단계 각각, 최장 발화(장황한 말·STT 반복 오인식 흉내, 200자)로 **최대값**을 잰다(평균 아님).
       `enableResponseFormat` 켬/끔 두 번 재서 차이 = 엔진이 스키마를 프롬프트에 넣는 몫. 저장소 어림값은 2단계 기차가 가장 커서 약 1,325(I-79, 실측 아님)
-- [ ] (D77) 판정: 최대값 > 1,400, 또는 Prefill 에러·kMaxNumTokensReached가 1회라도 → `ContextBudget.shouldTryRaise`가 참 → 3072로 PSS 재측정(코드 기본값은 바꾸지 않는다). 넘치면 3072보다 예시·지시 줄이기를 먼저 검토(팀 합의)
+- [ ] (D77) 판정: 최대값 > 1,400, 또는 Prefill 에러·kMaxNumTokensReached가 1회라도 → `ContextBudget.shouldTryRaise`가 참(파일 KV가 3072 미만이면 거짓, D79) → 3072로 PSS 재측정(코드 기본값은 바꾸지 않는다). 넘치면 3072보다 예시·지시 줄이기를 먼저 검토(팀 합의)
+- [ ] (16회차, D79·D57) `litert-lm-peek`로 모델 파일의 `max_num_tokens`·prefill 시그니처를 표로 적는다(Gemma 3n E2B, A34면 Qwen3도). 추정값을 쓰지 않는다
+- [ ] (D79) maxNumTokens=2048로 로드할 때 logcat에 `Using model limit` 경고가 나오는지(`adb logcat | grep -i "model limit"`). 나오면 파일 KV < 2048 → 그 값을 `LiteRtLmRunner.budget`에 넣어야 한다(I-80)
+- [ ] (D79) AAR에 `ModelInfo`·`maxContextTokens`·`isDynamicContext`가 보이는지: `unzip -l c.jar | grep -i ModelInfo`. 보이면 `LiteRtLmRunner.budget`을 그 값으로 교체, 없으면 peek 값을 상수로
+- [ ] (D79) week1.csv `measured_value`에 실효 예산 `요청,파일KV,실효`(예: `2048,,2048` = 파일 KV 미확인)를 필수로 적는다. 파일 KV가 4096 등 2048보다 크면 2048 지정 vs 미지정 PSS를 비교(KV 버퍼가 실제로 줄어드는지)
+- [ ] (D79) 2단계 사전 검사로 `budget_exceeded`(되묻기)가 나오면 프롬프트가 실효 예산에 안 들어간 것 — 예시·지시를 줄일지 팀에 올린다
 - [ ] 로그 금지(D70·I-67): 토큰 수는 숫자만 week1.csv에. 프롬프트·발화·출력 원문은 logcat·파일에 남기지 않는다
 
 ## 4-1. 데모 앱 목업 연결 확인 (C, 시간이 남으면)
