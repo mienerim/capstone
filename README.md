@@ -26,7 +26,7 @@
 | `service/android` | Android | `DumperService`(AccessibilityService, 화면 변경 시 `filesDir/dump.jsonl`)·노드 어댑터·제스처, **미빌드** | A |
 | `snapshot` | 순수 Kotlin | 저장 트리 JSONL v0 코덱(덤퍼가 쓰고 재생기가 읽음) | B |
 | `app-core` | 순수 Kotlin | 앱 흐름 판단: 첫 실행 고지·동의(D25)·D17 일일 한도·버튼/발화 → 슬롯 채우기 → 복창·확인 → 실행 안내(`AppSession`), 매니페스트 정책 테스트 | C |
-| `app` | Android | 데모 앱: `AppSession` 화면 그리기, 실행 조립(`AgentHost`: 서비스 → gate → 상태머신), 고정 알림, **미빌드** | C |
+| `app` | Android | 데모 앱: `AppSession` 화면 그리기, 실행 조립(`AgentHost`: 서비스 → gate → 상태머신), 진행 알림(지울 수 있음, D69), **미빌드** | C |
 | `mock-app` | Android | 코레일+ 흉내 4화면(S1 검색/S2 결과/S3 좌석+예매하기/S4 결제) + 변형 스위치([`mock-app/README.md`](mock-app/README.md)), **미빌드** | C |
 | `tools` | 순수 Kotlin | JSONL 재생기([`tools/README.md`](tools/README.md))·결함 주입 7종·n=20/60 하니스(Wilson 구간)·커밋 전 마스킹 린트(`mask-lint`, D58)·adb 스크립트(예정) | B |
 
@@ -48,7 +48,7 @@
 
 ## 현재 상태 (2026-10-23)
 
-- 순수 Kotlin 모듈은 클라우드 개발 루틴이 매 회차 빌드·테스트한다(10회차 226개)(`./gradlew -Pcapstone.android=false test`, 회차별 결과는 [`docs/ENV.md`](docs/ENV.md)).
+- 순수 Kotlin 모듈은 클라우드 개발 루틴이 매 회차 빌드·테스트한다(11회차 234개)(`./gradlew -Pcapstone.android=false test`, 회차별 결과는 [`docs/ENV.md`](docs/ENV.md)).
 - Android 모듈(`service/android`·`llm/litertlm`·`app`·`mock-app`)은 클라우드에서 Google Maven이 막혀 **한 번도 컴파일되지 않았다**.
   10-26 팀 PC에서 처음 빌드한다([`docs/FIRST-DAY.md`](docs/FIRST-DAY.md) 1절).
 - 코레일+ 화면 서명·시나리오는 아직 없다(10-27 덤프 뒤). 지금 시나리오는 목업 앱(`capstone.mock`)만 대상이다.

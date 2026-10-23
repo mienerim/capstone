@@ -1,4 +1,4 @@
-# 1주차 계획 ↔ 코드 대조 (7회차, 2026-10-23 / 8·9회차 보충 / 10회차 20시판 재대조)
+# 1주차 계획 ↔ 코드 대조 (7회차, 2026-10-23 / 8·9회차 보충 / 10회차 20시판 재대조 / 11회차 22시판)
 
 Notion '상세 ⑥ 개발 계획(역할·1~2주차)'(7회차 14시판, 10회차에 20시판 D65·D66·D67로 다시 맞춤)과 `claude/dev` 코드를 맞춰 본 결과. 
 ✅ 일치 / 🔧 이번 회차에 고침 / ⏳ 실측·합의 뒤 코드에 반영 / 📝 이름만 다름(동작 같음).
@@ -56,3 +56,21 @@ Notion '상세 ⑥ 개발 계획(역할·1~2주차)'(7회차 14시판, 10회차�
 | 10-26 안건: 온보딩 권한 범위·최대 단계 수 | 7단계 그대로 구현, 줄이면 `Onboarding` 상태만 바꾸면 됨 | ⏳ (팀 합의) |
 | D67 코레일 약관 팀 확인 #2 | 저장소 할 일 없음 | ✅ (I-65) |
 
+
+## 11회차: 22시판(D68·D69·D70) 대조
+
+| 계획 항목 | 코드 | 상태 |
+| --- | --- | --- |
+| D68 ① AP 감지는 SDK ≥ 36에서만, 예외는 불명, QUERY_ADVANCED_PROTECTION_MODE | `AndroidDeviceChecks.advancedProtection()`·매니페스트 권한 | ✅ (미빌드) |
+| D68 ② 켜짐 확인 + 서비스 꺼짐 → 분기 B(설명 위주·해제 강요 없음·보호자 확인) | `Onboarding.blockedByProtection()`·`PROTECTED_TEXT` 문구 테스트 | 🔧 (I-68, 전에는 AP 켜짐만으로 B) |
+| D68 ② 불명 → 분기 A + '제한될 수 있어요' 보조 문구 | `AskFamily(protectionUnknown)`·`AP_UNKNOWN_HINT` | 🔧 |
+| D68 ③ 서비스 활성 매번 확인, AP 콜백은 재검사 트리거만 | `onResume` → `recheckProtection()`, 콜백 미등록 | 🔧 (I-68) |
+| D68 분기 B 문구 확정·Auto Blocker·위험 앱 보호 실측 | W09(A) | ⏳ |
+| D69 ⑤ 앱·채널 알림 꺼짐 → 대행 미시작·앱 화면 허용 안내 | `notificationsGranted()` = areNotificationsEnabled + 채널 중요도, `NOTIFICATIONS_OFF_TEXT` | 🔧 (I-69, android 쪽 미빌드) |
+| D69 ① 진입 3중화(알림 + 앱 아이콘 재개 + 인앱 배너) | 알림·아이콘 재개는 있음, 인앱 배너 없음 | ⏳ (W02, B) |
+| D69 ② deleteIntent 1회 재게시 ③ 접근성 버튼 보조 ④ CallStyle 금지 | CallStyle 안 씀, 재게시·접근성 버튼 없음 | ✅ / ⏳ (W02, B) |
+| D39 '고정 알림' → '진행 알림(지울 수 있음)' | `ProgressNotice` 주석 | 🔧 |
+| D70 ① 병원명·진료과·의사명·예약 일시·증상 저장 전 마스킹 | `DumpMasker` 기관명·진료과 패턴 + `healthPackages` 창 전체 마스킹 | 🔧 (I-66, 패키지명은 10-28 뒤) |
+| D70 ③ 건강정보 GitHub 금지 | `mask-lint` 기관명에 약국·보건소 추가 | 🔧 |
+| D70 검증: logcat·LLM 입출력 로그 마스킹 | llm·app-core·app 로그 호출 0개를 `LogPolicyTest`로 고정 | 🔧 (I-67) |
+| D70 ② 비로그인 → 가상 프로필 → 목업, 본인인증부터 목업 | 병원 시나리오 없음(I-47) | ⏳ (10-28 C 드라이런 뒤) |
