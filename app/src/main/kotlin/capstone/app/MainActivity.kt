@@ -2,7 +2,6 @@ package capstone.app
 
 import android.Manifest
 import android.app.Activity
-import android.app.ActivityManager
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.graphics.Typeface
@@ -328,9 +327,8 @@ class MainActivity : Activity() {
         val model = File(getExternalFilesDir(null), MODEL_FILE).takeIf { it.isFile }
             ?: File(filesDir, MODEL_FILE).takeIf { it.isFile }
             ?: return null
-        // D65: KV 한도는 기기 RAM으로(8GB급 4096 후보, 그 아래 2048).
-        val mem = ActivityManager.MemoryInfo().also { getSystemService(ActivityManager::class.java).getMemoryInfo(it) }
-        val runner = LiteRtLmRunner(model, cacheDir, maxNumTokens = ContextBudget.maxNumTokens(mem.totalMem))
+        // D77: KV 한도는 전 기기 2048 하나(LLM 입력에 UI 트리가 없으므로 RAM으로 가르지 않는다).
+        val runner = LiteRtLmRunner(model, cacheDir, maxNumTokens = ContextBudget.MAX_NUM_TOKENS)
         return SlotParser(GuardedGenerator(runner)).also { parser = it }
     }
 

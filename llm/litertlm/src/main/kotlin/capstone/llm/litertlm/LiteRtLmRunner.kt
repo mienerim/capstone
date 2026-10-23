@@ -27,12 +27,12 @@ import java.io.File
  * 8GB 기기는 JSON 확정 뒤 [close]로 엔진을 내린다(D31).
  *
  * @param modelFile getExternalFilesDir 아래 adb push한 .litertlm(D40). 모델은 저장소에 넣지 않는다.
- * @param maxNumTokens 입력+출력 KV 한도. [ContextBudget.maxNumTokens]로 기기 RAM에 맞춰 고른다(D65).
+ * @param maxNumTokens 입력+출력 KV 한도. 전 기기 [ContextBudget.MAX_NUM_TOKENS](D77). W03 상향 판정 때만 다른 값을 넣는다.
  */
 class LiteRtLmRunner(
     private val modelFile: File,
     private val cacheDir: File,
-    private val maxNumTokens: Int = ContextBudget.SMALL,
+    private val maxNumTokens: Int = ContextBudget.MAX_NUM_TOKENS,
     private val backend: Backend = Backend.CPU(),
 ) : LlmRunner {
     private var engine: Engine? = null

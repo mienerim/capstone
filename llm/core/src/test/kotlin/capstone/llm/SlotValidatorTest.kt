@@ -126,13 +126,4 @@ class SlotValidatorTest {
         assertEquals("not_a_single_object", why("설명: {"))
         assertIs<Validation.Valid<IntentResult>>(SlotValidator.stage1("""{"intent":"train_book","app":null,"reason":null}"""))
     }
-
-    @Test
-    fun `컨텍스트 한도 - 8GB급은 4096, 6GB급·못 읽음은 2048(D65)`() {
-        val gib = 1024L * 1024 * 1024
-        assertEquals(4096, ContextBudget.maxNumTokens(7_600_000_000L))
-        assertEquals(4096, ContextBudget.maxNumTokens(11 * gib))
-        assertEquals(2048, ContextBudget.maxNumTokens(5_600_000_000L))
-        assertEquals(2048, ContextBudget.maxNumTokens(0))
-    }
 }

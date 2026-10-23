@@ -1,23 +1,31 @@
 package capstone.llm
 
 /**
- * 엔진 KV 한도(D65). LiteRT-LM의 `maxNumTokens`는 입력+출력 합계이고 KV 메모리는 이 값에 비례하므로 기기 RAM으로 고른다.
+ * 엔진 KV 한도(D77, D65 정정). LiteRT-LM의 `maxNumTokens`는 입력+출력 합계다(D65, v0.18.0 C++ 원문 확인).
  *
- * - 8GB 이상: 4096(후보, 10-26 첫날 PSS 실측 후 확정 — S24 8GB 공존이 W04에서 깨지면 2048로 내린다)
- * - 그 아래(A34 6GB, W13): 2048
+ * 전 기기 2048 하나(A34 포함). D65의 4096 후보는 'UI 트리 포함' 전제였는데, 우리 llm 입력은
+ * 시스템 지시 + 스키마 + 발화뿐이고 UI 트리는 넣지 않는다(D3·D18·D32, I-38). 요청마다 새 Conversation이라 단계 간 누적도 없다.
  *
- * 우리 llm 입력은 발화 200자 + 시스템 지시 + 스키마뿐이고 UI 트리는 넣지 않는다(D32, I-38). 그래서 2048도 지금 입력에는 넉넉하다.
+ * 올리는 조건은 [shouldTryRaise] — W03 실측으로만 판정하고, 그때도 바로 바꾸지 않고 [RAISE_CANDIDATE]로 PSS부터 다시 잰다.
  */
 object ContextBudget {
-    const val LARGE: Int = 4096
-    const val SMALL: Int = 2048
+    const val MAX_NUM_TOKENS: Int = 2048
+
+    /** W03 상향 조건이 걸렸을 때 PSS를 다시 잴 후보값(D77). 코드 기본값이 아니다. */
+    const val RAISE_CANDIDATE: Int = 3072
+
+    /** 템플릿 적용 뒤 최종 렌더링 입력 토큰이 이 값을 넘으면 상향 후보(D77, 입력 예산 약 1,664 = 2048 − 384에서 여유를 둔 값). */
+    const val RAISE_INPUT_THRESHOLD: Int = 1400
+
+    /** 입력에 쓸 수 있는 몫. 출력 상한(워치독 384, D65)을 뺀 나머지. */
+    fun inputBudget(maxOutputTokens: Int = WatchdogLimits().maxTokens): Int = MAX_NUM_TOKENS - maxOutputTokens
 
     /**
-     * 커널이 예약분을 빼고 보고하므로 '8GB' 기기의 `MemInfo.totalMem`은 7.2~7.6GiB쯤 나온다(추정).
-     * 6GB 기기(약 5.5GiB)와 가르기 위해 경계를 7GiB에 둔다.
+     * W03 판정(D77). 입력 토큰은 1·2단계 각각, 최장 예시 + 최장 발화(장황한 발화·STT 반복 오인식 포함)의 **최대값**을 넣는다.
+     * 평균을 넣으면 안 된다(검증 보강). Prefill 에러나 kMaxNumTokensReached가 1회라도 있으면 그것만으로 상향 후보다.
+     *
+     * 넘쳤을 때 few-shot을 줄이는 것을 3072보다 먼저 검토한다(팀 합의) — 그 판단은 이 함수 밖이다.
      */
-    const val LARGE_MIN_TOTAL_BYTES: Long = 7L * 1024 * 1024 * 1024
-
-    /** @param totalMemBytes ActivityManager.MemoryInfo.totalMem. 0 이하(못 읽음)면 작은 쪽으로. */
-    fun maxNumTokens(totalMemBytes: Long): Int = if (totalMemBytes >= LARGE_MIN_TOTAL_BYTES) LARGE else SMALL
+    fun shouldTryRaise(maxRenderedInputTokens: Int, prefillErrors: Int = 0, maxTokensReached: Int = 0): Boolean =
+        maxRenderedInputTokens > RAISE_INPUT_THRESHOLD || prefillErrors > 0 || maxTokensReached > 0
 }
