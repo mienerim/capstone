@@ -27,7 +27,8 @@ import java.io.File
  * 8GB 기기는 JSON 확정 뒤 [close]로 엔진을 내린다(D31).
  *
  * @param modelFile getExternalFilesDir 아래 adb push한 .litertlm(D40). 모델은 저장소에 넣지 않는다.
- * @param maxNumTokens 입력+출력 KV 한도. 전 기기 [ContextBudget.MAX_NUM_TOKENS](D77). W03 상향 판정 때만 다른 값을 넣는다.
+ * @param maxNumTokens 입력+출력 KV 한도 **요청값**. 전 기기 [ContextBudget.MAX_NUM_TOKENS](D77). W03 상향 판정 때만 다른 값을 넣는다.
+ *   정적 .litertlm은 파일 KV보다 큰 요청을 조용히 파일 값으로 낮추므로 실제 예산은 [budget]이다(D79).
  */
 class LiteRtLmRunner(
     private val modelFile: File,
@@ -36,6 +37,13 @@ class LiteRtLmRunner(
     private val backend: Backend = Backend.CPU(),
 ) : LlmRunner {
     private var engine: Engine? = null
+
+    /**
+     * 실효 예산 = min(요청, 파일 KV)(D79). 지금은 파일명 표지(`_ekv1280`)만 읽는다.
+     * 10-26: AAR에 `ModelInfo.from(path).maxContextTokens()`가 보이면 그 값으로 바꾸고, 없으면 litert-lm-peek 값을 상수로 둔다.
+     * 실험 CSV에는 [ContextBudget.Budget.csv]를 필수 열로 적는다(기기·모델 간 조건이 달라지므로).
+     */
+    val budget: ContextBudget.Budget = ContextBudget.effective(ContextBudget.fileKvFromName(modelFile.name), maxNumTokens)
 
     @Volatile private var job: Job? = null
 
@@ -48,7 +56,8 @@ class LiteRtLmRunner(
      */
     @Synchronized
     fun ensureLoaded(): Engine = engine ?: Engine(
-        // maxNumTokens = KV 캐시 크기라 8GB 기기 메모리에 직접 걸린다(W04). 입력이 이 값 이상이면 Prefill 에러(D65).
+        // maxNumTokens = KV 캐시 크기라 8GB 기기 메모리에 직접 걸린다(W04). 파일 KV보다 크면 엔진이 WARNING "…Using model limit."
+        // 후 낮춘다(D79, 첫날 logcat으로 확인). 입력 초과는 SlotParser 단계 사전 검사가 먼저 막는다.
         EngineConfig(modelPath = modelFile.absolutePath, backend = backend, maxNumTokens = maxNumTokens, cacheDir = cacheDir.absolutePath),
     ).also {
         it.initialize()

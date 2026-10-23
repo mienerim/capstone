@@ -327,9 +327,10 @@ class MainActivity : Activity() {
         val model = File(getExternalFilesDir(null), MODEL_FILE).takeIf { it.isFile }
             ?: File(filesDir, MODEL_FILE).takeIf { it.isFile }
             ?: return null
-        // D77: KV 한도는 전 기기 2048 하나(LLM 입력에 UI 트리가 없으므로 RAM으로 가르지 않는다).
+        // D77: KV 요청값은 전 기기 2048 하나(LLM 입력에 UI 트리가 없으므로 RAM으로 가르지 않는다).
+        // D79: 실효 예산은 min(2048, 파일 KV) — 파서가 단계마다 '프롬프트 + 384 ≤ 실효 예산'을 먼저 검사한다.
         val runner = LiteRtLmRunner(model, cacheDir, maxNumTokens = ContextBudget.MAX_NUM_TOKENS)
-        return SlotParser(GuardedGenerator(runner)).also { parser = it }
+        return SlotParser(GuardedGenerator(runner), budget = runner.budget).also { parser = it }
     }
 
     // ---- 위젯 ----

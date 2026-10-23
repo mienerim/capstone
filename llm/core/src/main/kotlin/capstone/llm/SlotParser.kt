@@ -19,11 +19,19 @@ data class ParseAttempt(val stage: Int, val attempt: Int, val outcome: String, v
  *
  * 각 단계: 워치독 아래 생성 → 스키마 재검증 → 실패하면 재생성 1회 → 그래도 실패하면 [ParseResult.AskAgain].
  * 러너 예외·시간 초과도 같은 경로다(fail-closed: 애매하면 실행하지 않고 다시 묻는다).
+ *
+ * 생성 전에 단계마다 예산을 검사한다(D79): '프롬프트 토큰 + 384 ≤ 실효 예산'이 아니면 그 단계는 생성 0회로 되묻는다.
+ * 클램프된 엔진에 넘치는 입력을 넣으면 잘린 JSON·Prefill 에러가 나므로 미리 막는 쪽이 단순하다.
+ *
+ * @param budget [ContextBudget.effective] — 모델 파일 KV를 반영한 실효 예산.
+ * @param tokenCounter 모델 토크나이저 계수기가 생기기 전에는 보수적 어림(I-80).
  */
 class SlotParser(
     private val generator: GuardedGenerator,
     private val prompts: SlotPrompts = SlotPrompts,
     private val maxAttempts: Int = 2,
+    val budget: ContextBudget.Budget = ContextBudget.effective(fileKv = null),
+    private val tokenCounter: PromptTokenCounter = ConservativeTokenEstimate,
 ) {
     private val _attempts = mutableListOf<ParseAttempt>()
     val attempts: List<ParseAttempt> get() = _attempts.toList()
@@ -47,6 +55,12 @@ class SlotParser(
     }
 
     private fun <T> stage(n: Int, req: LlmRequest, validate: (String) -> Validation<T>): Validation<T> {
+        tokenCounter.count(req)?.let { tokens ->
+            if (!ContextBudget.fitsStage(tokens, budget)) {
+                _attempts += ParseAttempt(n, 0, BUDGET_EXCEEDED, 0, 0)
+                return Validation.Invalid(BUDGET_EXCEEDED)
+            }
+        }
         var last: Validation<T> = Validation.Invalid("no_attempt")
         for (attempt in 1..maxAttempts) {
             last = when (val g = generator.generate(req)) {
@@ -65,6 +79,9 @@ class SlotParser(
     companion object {
         const val STAGE1_TOKENS: Int = 64
         const val STAGE2_TOKENS: Int = 192
+
+        /** 단계 사전 검사 실패(D79). 생성은 한 번도 하지 않았다. */
+        const val BUDGET_EXCEEDED: String = "budget_exceeded"
     }
 }
 

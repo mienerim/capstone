@@ -41,6 +41,32 @@ class SlotParserTest {
     }
 
     @Test
+    fun `예산 사전 검사 - 넘치는 단계는 생성 0회로 되묻는다(D79)`() {
+        // 1단계는 들어가고 2단계만 넘치도록 계수기를 단계별로 다르게 준다.
+        val counter = PromptTokenCounter { req -> if (req.maxOutputTokens == SlotParser.STAGE1_TOKENS) 500 else 1_000 }
+        val runner = FakeRunner(text(Outputs.TRAIN))
+        val p = SlotParser(GuardedGenerator(runner), budget = ContextBudget.effective(1280), tokenCounter = counter)
+        val r = assertIs<ParseResult.AskAgain>(p.parse("서울에서 부산"))
+        assertEquals(2, r.stage)
+        assertEquals(SlotParser.BUDGET_EXCEEDED, r.why)
+        assertEquals(1, runner.requests.size, "2단계는 엔진에 가지 않는다")
+        assertEquals(listOf("valid", SlotParser.BUDGET_EXCEEDED), p.attempts.map { it.outcome })
+    }
+
+    @Test
+    fun `예산 사전 검사 - 셀 수 없으면(null) 검사 없이 진행한다`() {
+        val runner = FakeRunner(text(Outputs.TRAIN), text(Outputs.SEOUL_BUSAN))
+        val p = SlotParser(GuardedGenerator(runner), budget = ContextBudget.effective(1280), tokenCounter = { null })
+        assertIs<ParseResult.Ok>(p.parse("서울에서 부산"))
+    }
+
+    @Test
+    fun `기본 조립(파일 KV 모름 = 2048)은 현 프롬프트 최장 발화를 막지 않는다`() {
+        val runner = FakeRunner(text(Outputs.TRAIN), text(Outputs.SEOUL_BUSAN))
+        assertIs<ParseResult.Ok>(parser(runner).parse("가".repeat(SlotPrompts.MAX_UTTERANCE_CHARS)))
+    }
+
+    @Test
     fun `두 번 실패하면 되묻는다`() {
         val runner = FakeRunner(text("모르겠어요"), text("{\"intent\":"))
         val r = assertIs<ParseResult.AskAgain>(parser(runner).parse("음..."))
