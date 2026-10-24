@@ -25,7 +25,7 @@ import java.io.FileWriter
  */
 class AgentHost(
     private val filesDir: File,
-    private val onState: (RunState) -> Unit,
+    private val onState: (ScenarioRunner, RunState) -> Unit,
 ) {
     private val worker = HandlerThread("agent").also { it.start() }
     private val bg = Handler(worker.looper)
@@ -58,7 +58,8 @@ class AgentHost(
             val r = runner ?: return
             val st = r.tick()
             proofLog?.flush()
-            main.post { onState(st) }
+            // 러너도 함께 넘긴다: '그만하기'·새 실행 뒤에 도착한 지난 러너의 상태는 세션이 버린다(I-85).
+            main.post { onState(r, st) }
             when (st) {
                 is RunState.Running -> bg.post(this)
                 // HANDOFF 중에는 사람이 조작하므로 천천히 관측만 한다(복귀 감지, D14).

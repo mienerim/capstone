@@ -21,6 +21,7 @@ import android.widget.LinearLayout
 import android.widget.ScrollView
 import android.widget.TextView
 import capstone.agent.RunState
+import capstone.agent.ScenarioRunner
 import capstone.app.core.AppScreen
 import capstone.app.core.AppSession
 import capstone.app.core.Disclosure
@@ -63,7 +64,7 @@ class MainActivity : Activity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         notice = ProgressNotice(this)
-        host = AgentHost(filesDir) { st -> onRunState(st) }
+        host = AgentHost(filesDir) { r, st -> onRunState(r, st) }
         val store = PrefsStore(this)
         onboarding = Onboarding(store, AndroidDeviceChecks(this))
         session = AppSession(
@@ -121,8 +122,8 @@ class MainActivity : Activity() {
         }
     }
 
-    private fun onRunState(st: RunState) {
-        session.onRunState(st)
+    private fun onRunState(from: ScenarioRunner, st: RunState) {
+        if (!session.onRunState(st, from)) return
         when (st) {
             is RunState.Done, is RunState.Stopped -> {
                 notice.hide()

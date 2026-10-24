@@ -213,18 +213,25 @@ class AppSession(
 
     // ---- 실행 중 ----
 
-    /** 러너 상태가 바뀔 때마다 앱이 부른다. */
-    fun onRunState(st: RunState) {
+    /**
+     * 러너 상태가 바뀔 때마다 앱이 부른다. [from]은 그 상태를 낸 러너다: 작업 스레드 결과는 메인 스레드에 늦게 오므로
+     * '그만하기'·새 실행 뒤에 지난 러너의 상태가 올 수 있다. 그건 버리고 false(화면을 바꾸지 않는다, I-85).
+     */
+    fun onRunState(st: RunState, from: ScenarioRunner? = runner): Boolean {
+        if (from == null || from !== runner) return false
         screen = when (st) {
             is RunState.Done -> AppScreen.Finished(st.summary, success = true)
             is RunState.Stopped -> AppScreen.Finished(Readback.stopped(st.reason), success = false)
             else -> AppScreen.Running(Readback.runState(st), st)
         }
+        return true
     }
 
+    /** ASK_USER 보기를 골랐다. 그새 러너가 다른 상태(예: 멈춤)로 갔으면 답하지 않고 화면만 맞춘다. */
     fun answer(option: String) {
         val r = runner ?: error("실행 중 아님")
-        r.answer(option)
+        val st = r.state
+        if (st is RunState.AskUser && option in st.options) r.answer(option)
         onRunState(r.state)
     }
 
@@ -235,7 +242,7 @@ class AppSession(
 
     fun resume() {
         val r = runner ?: error("실행 중 아님")
-        r.resumeFromPause()
+        if (r.state is RunState.PausedForUser) r.resumeFromPause()
         onRunState(r.state)
     }
 
