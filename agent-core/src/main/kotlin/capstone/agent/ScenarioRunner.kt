@@ -137,6 +137,9 @@ class ScenarioRunner(
             }
         } catch (_: PauseSignal) {
             pause()
+        } catch (e: SlotMissing) {
+            // 앱은 빈 슬롯을 버튼으로 채운 뒤에만 러너를 만들지만, 그 약속이 깨져도 크래시가 아니라 정지(D35).
+            stop("slot_missing:${e.slot}")
         }
         return state
     }
@@ -218,15 +221,15 @@ class ScenarioRunner(
         is Step.Finish -> snap.screen == step.on
         // 미리 채운 값(발화·CLI)도 그 화면의 보기에 있어야 한다. 없으면(SRT·매진·다른 화면 값) 다시 묻는다(I-57).
         is Step.Ask -> step.slot in slots && (snap.screen != step.on || slots[step.slot] in askOptions(step, snap))
-        is Step.Type -> snap.screen == step.on && typedValue(snap, step.target(slots))
-            ?.let { it == norm(step.text(slots)) } == true
+        is Step.Type -> snap.screen == step.on && typedValue(snap, withSlots(step.target))
+            ?.let { it == norm(withSlots(step.text)) } == true
     }
 
     /** @return false면 상태가 바뀌었다(ASK_USER·HANDOFF·정지·일시정지) → 단계 루프를 나간다. */
     private fun act(i: Int, step: Step, snap: Snapshot): Boolean {
         when (step) {
             is Step.Click -> {
-                val ref = resolveClickable(snap, step.target(slots), i) ?: return true
+                val ref = resolveClickable(snap, withSlots(step.target), i) ?: return true
                 if (looksLikeConfirm(snap, ref)) {
                     // 시나리오 정의 오류. gate도 막지만 제출 자체를 하지 않는다(이중 방어).
                     stop("flow_targets_confirm")
@@ -241,8 +244,8 @@ class ScenarioRunner(
                 await(setOf(step.then), step.timeoutMs ?: config.stepTimeoutMs)
             }
             is Step.Type -> {
-                val ref = resolveEditable(snap, step.target(slots), i) ?: return true
-                submit(snap, ActionRequest.SetText(ref, step.text(slots), fgPackage(snap), snap.screen)) ?: return false
+                val ref = resolveEditable(snap, withSlots(step.target), i) ?: return true
+                submit(snap, ActionRequest.SetText(ref, withSlots(step.text), fgPackage(snap), snap.screen)) ?: return false
             }
             is Step.Back -> {
                 submit(snap, ActionRequest.GlobalBack(fgPackage(snap), snap.screen)) ?: return false
@@ -462,6 +465,24 @@ class ScenarioRunner(
     private fun norm(s: String?): String = LabelNormalizer.normalize(s)
 
     /** 일시정지 요청을 대기·제출 지점에서 단계 루프 밖으로 풀어 내는 신호(스택 추적 없음). */
+    /** 시나리오 람다가 빈 슬롯을 꺼내다 던진 예외(`getValue`)를 정지 사유로 바꾼다. 빈 슬롯과 무관한 예외는 그대로 둔다. */
+    private fun <T> withSlots(f: (Slots) -> T): T {
+        val view = MissTracking(slots)
+        return try {
+            f(view)
+        } catch (e: NoSuchElementException) {
+            throw SlotMissing(view.missed ?: throw e)
+        }
+    }
+
+    /** getValue는 get이 null을 주면 던진다 → 마지막으로 null을 받은 키가 빠진 슬롯이다. */
+    private class MissTracking(private val m: Map<String, String>) : Map<String, String> by m {
+        var missed: String? = null
+        override fun get(key: String): String? = m[key].also { if (it == null) missed = key }
+    }
+
+    private class SlotMissing(val slot: String) : RuntimeException()
+
     private object PauseSignal : RuntimeException() {
         override fun fillInStackTrace(): Throwable = this
     }
