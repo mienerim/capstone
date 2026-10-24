@@ -46,9 +46,9 @@
 - 모델 파일(`*.litertlm`)은 저장소에 넣지 않는다. 기기에 `adb push`로 올린다(D40, [`docs/FIRST-DAY.md`](docs/FIRST-DAY.md)).
 - 빌드 후 `aapt dump permissions app-debug.apk`로 INTERNET 권한이 없는지 확인한다.
 
-## 현재 상태 (2026-10-24)
+## 현재 상태 (2026-10-25)
 
-- 순수 Kotlin 모듈은 클라우드 개발 루틴이 매 회차 빌드·테스트한다(17회차 270개)(`./gradlew -Pcapstone.android=false test`, 회차별 결과는 [`docs/ENV.md`](docs/ENV.md)).
+- 순수 Kotlin 모듈은 클라우드 개발 루틴이 매 회차 빌드·테스트한다(25회차 302개)(`./gradlew -Pcapstone.android=false test`, 회차별 결과는 [`docs/ENV.md`](docs/ENV.md)).
 - Android 모듈(`service/android`·`llm/litertlm`·`app`·`mock-app`)은 클라우드에서 Google Maven이 막혀 **한 번도 컴파일되지 않았다**.
   10-26 팀 PC에서 처음 빌드한다([`docs/FIRST-DAY.md`](docs/FIRST-DAY.md) 1절).
 - 코레일+ 화면 서명·시나리오는 아직 없다(10-27 덤프 뒤). 지금 시나리오는 목업 앱(`capstone.mock`)만 대상이다.

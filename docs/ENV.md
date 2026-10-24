@@ -258,3 +258,12 @@ $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager "platform-tools" "platforms;an
 | Gradle wrapper | 8.14.3 배포본 새로 받음, `--max-workers=1`, `LANG=C.UTF-8`. 23회차처럼 저장소 밖 `~/.gradle/init.d/mirror.gradle.kts`(GCS 미러)를 먼저 깔아 두어 Maven Central 429·404 없이 한 번에 통과 |
 | dl.google.com | 확인 생략(22회차까지 계속 차단). app·service/android·mock-app·llm/litertlm 미빌드 |
 | 결과 | 순수 Kotlin 모듈 테스트 298개 통과(snapshot +3: SnapshotJsonlFuzzTest — 창 노드 조용한 잘림 496건 수정, I-89). `mask-lint` 저장소 검사 통과 |
+
+## 2026-10-25 (25회차)
+
+| 항목 | 결과 |
+| --- | --- |
+| JDK | 컨테이너에 21만 있어 apt `openjdk-17-jdk-headless` 설치 |
+| Gradle wrapper | 8.14.3, `--max-workers=1`, `LANG=C.UTF-8`. 저장소 밖 `~/.gradle/init.d/mirror.gradle.kts`(GCS 미러)를 먼저 깔아 한 번에 통과 |
+| dl.google.com | 여전히 차단(프록시 connect_rejected). app·service/android·mock-app·llm/litertlm 미빌드 |
+| 결과 | 순수 Kotlin 모듈 테스트 302개 통과(app-core +4: OnboardingFuzzTest — AP 켜짐·알림 꺼짐 상태의 설정 단계 진입 1,349건 수정, I-90). `mask-lint` 저장소 검사 통과 |
