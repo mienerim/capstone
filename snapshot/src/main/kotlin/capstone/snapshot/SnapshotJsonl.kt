@@ -99,17 +99,27 @@ object SnapshotJsonl {
         val id = w.int("id") ?: throw ReplayFormatException("$at: id 없음")
         val type = w.str("type")?.let { t -> WindowType.entries.firstOrNull { it.name == t } ?: WindowType.UNKNOWN }
             ?: WindowType.UNKNOWN
-        val nodesArr = (w["nodes"] as? JsonArray) ?: JsonArray(emptyList())
+        // nodes·root가 있는데 형식이 틀리면 빈 창으로 넘기지 않는다: 그 창의 노드가 통째로 빠져 재생기
+        // M7 판정이 확정 버튼을 못 본다(SnapshotJsonlFuzzTest·I-89).
+        val nodesArr = when (val n = w["nodes"]) {
+            null, JsonNull -> JsonArray(emptyList())
+            is JsonArray -> n
+            else -> throw ReplayFormatException("$at: nodes가 배열 아님")
+        }
         val raw = LinkedHashMap<Int, JsonObject>()
         for ((i, n) in nodesArr.withIndex()) {
             val o = n as? JsonObject ?: throw ReplayFormatException("$at: nodes[$i] 객체 아님")
             val nid = o.int("id") ?: throw ReplayFormatException("$at: nodes[$i].id 없음")
             if (raw.put(nid, o) != null) throw ReplayFormatException("$at: 노드 id 중복 $nid")
         }
+        if (w["root"].let { it != null && it != JsonNull && w.int("root") == null }) {
+            throw ReplayFormatException("$at: root가 정수 아님")
+        }
         val rootId = w.int("root") ?: raw.keys.firstOrNull() ?: -1
-        val root = if (rootId < 0 || raw.isEmpty()) {
+        val root = if (raw.isEmpty()) {
             null
         } else {
+            if (rootId < 0) throw ReplayFormatException("$at: root=$rootId 인데 노드 ${raw.size}개")
             if (rootId !in raw) throw ReplayFormatException("$at: root=$rootId 노드 없음")
             buildTree(rootId, raw, at)
         }
