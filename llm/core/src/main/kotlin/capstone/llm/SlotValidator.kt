@@ -95,7 +95,11 @@ object SlotValidator {
     private fun parseObject(raw: String): JsonObject {
         val t = raw.trim()
         // 엔진은 출력 상한에 닿아도 에러 없이 끝낸다(D65). 닫히지 않은 객체는 따로 세어 측정 시트 E에 남긴다.
-        if (t.startsWith("{") && !closes(t)) invalid("truncated")
+        if (t.startsWith("{")) when (scan(t)) {
+            Scan.OPEN -> invalid("truncated")
+            Scan.TOO_DEEP -> invalid("too_deep")
+            Scan.CLOSED -> {}
+        }
         // 펜스·머리말·꼬리말을 잘라 내 '살리지' 않는다: 형식 탈취(T3)와 정상 출력을 구분할 수 없게 되기 때문이다.
         if (!t.startsWith("{") || !t.endsWith("}")) invalid("not_a_single_object")
         val e = try {
@@ -106,8 +110,17 @@ object SlotValidator {
         return e as? JsonObject ?: invalid("not_object")
     }
 
-    /** 첫 `{`의 짝이 문자열 밖에서 닫히는가. 닫힌 뒤의 꼬리말은 여기서 보지 않는다(not_a_single_object가 거부). */
-    private fun closes(t: String): Boolean {
+    private enum class Scan { CLOSED, OPEN, TOO_DEEP }
+
+    /** 스키마 중첩은 최대 2(객체 → missing 배열). 여유를 두되 이보다 깊으면 파싱 전에 거부한다. */
+    private const val MAX_DEPTH = 4
+
+    /**
+     * 첫 `{`의 짝이 문자열 밖에서 닫히는가. 닫힌 뒤의 꼬리말은 여기서 보지 않는다(not_a_single_object가 거부).
+     * 깊이 제한은 kotlinx JsonTreeReader가 배열을 재귀로 읽어 '[[[[…' 수천 겹에서 StackOverflowError(Error라
+     * 아래 catch에 안 걸림)로 앱이 죽기 때문이다 — fail-closed가 아니라 크래시가 된다(SlotValidatorFuzzTest, I-81).
+     */
+    private fun scan(t: String): Scan {
         var depth = 0
         var inString = false
         var escaped = false
@@ -117,11 +130,11 @@ object SlotValidator {
                 inString && c == '\\' -> escaped = true
                 c == '"' -> inString = !inString
                 inString -> {}
-                c == '{' || c == '[' -> depth++
-                c == '}' || c == ']' -> if (--depth == 0) return true
+                c == '{' || c == '[' -> if (++depth > MAX_DEPTH) return Scan.TOO_DEEP
+                c == '}' || c == ']' -> if (--depth == 0) return Scan.CLOSED
             }
         }
-        return false
+        return Scan.OPEN
     }
 
     private fun exactKeys(o: JsonObject, keys: Set<String>) {
