@@ -17,6 +17,12 @@ class Gate(
     private var lockReason: BlockReason? = null
     private var seq = 0L
 
+    /**
+     * 실행 직후 캡처에 앞 앱 창이 없어(전환 애니메이션 중) 패키지 전환을 확인하지 못했을 때, 실행한 패키지.
+     * 다음에 gate가 처음 보는 앞 앱과 비교한다(I-88).
+     */
+    private var unverifiedFrom: String? = null
+
     val lockedReason: BlockReason? @Synchronized get() = lockReason
 
     @Synchronized
@@ -31,6 +37,7 @@ class Gate(
     @Synchronized
     fun unlockByUser() {
         lockReason = null
+        unverifiedFrom = null
         baselines.clear()
     }
 
@@ -53,6 +60,7 @@ class Gate(
 
     private fun evaluateBefore(before: Snapshot, req: ActionRequest): Decision {
         lockReason?.let { return Decision.Block(it, listOf("locked")) }
+        pendingSwitch(before)?.let { return it }
         common(before, req)?.let { return it }
 
         val fg = before.foregroundAppWindow!!
@@ -209,10 +217,13 @@ class Gate(
     private fun evaluateAfter(before: Snapshot, after: Snapshot, req: ActionRequest): Decision {
         lockReason?.let { return Decision.Block(it, listOf("locked")) }
         val beforeFg = before.foregroundAppWindow
+        pendingSwitch(after)?.let { return it }
         val afterFg = after.foregroundAppWindow
         if (beforeFg != null && afterFg != null && beforeFg.packageName != afterFg.packageName) {
             return lock(BlockReason.FAIL_CLOSED_PACKAGE_MISMATCH, listOf("switched:${beforeFg.packageName}->${afterFg.packageName}"))
         }
+        // 앞 앱이 안 보이면 전환 여부를 아직 모른다. 판단을 미루고, 다음에 보이는 앞 앱으로 정한다.
+        if (afterFg == null && beforeFg != null) unverifiedFrom = beforeFg.packageName
         // 실행 후에는 '다음 화면'이 예상 화면과 다를 수 있으므로 expectedScreen은 보지 않는다.
         val block = common(after, stripExpectedScreen(req))
         if (block != null) {
@@ -229,6 +240,19 @@ class Gate(
         }
         remember(after, fg)
         return Decision.Allow()
+    }
+
+    /**
+     * 실행 뒤 처음 보이는 앞 앱이 실행한 패키지와 다르면, 그 사이 전환 중 캡처가 끼었어도 직접 전환과 같이 잠근다.
+     * 전환 중 캡처(빈 트리·앞 앱 없음)는 잠그지 않으므로(I-12) 이것이 없으면 '실행 → 전환 중 → 다른 앱 → 복귀'가
+     * 잠금 없이 이어졌다(AppSwitchLockFuzzTest·I-88).
+     */
+    private fun pendingSwitch(snap: Snapshot): Decision.Block? {
+        val from = unverifiedFrom ?: return null
+        val pkg = snap.foregroundAppWindow?.packageName ?: return null
+        unverifiedFrom = null
+        if (pkg == from) return null
+        return lock(BlockReason.FAIL_CLOSED_PACKAGE_MISMATCH, listOf("switched:$from->$pkg", "after_unverified_capture"))
     }
 
     private fun stripExpectedScreen(req: ActionRequest): ActionRequest = when (req) {
