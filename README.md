@@ -24,7 +24,7 @@
 | `app-scenarios` | 순수 Kotlin | 앱별 화면 서명·시나리오(목업 `MockKorail`·`MockKorailFlow`, 코레일+는 10-27 덤프 뒤) | A |
 | `service/core` | 순수 Kotlin | 트리 캡처(`TreeCapture`, 한도 초과 시 빈 트리, 허용목록 밖 창은 비순회)·이벤트 필터/집계(`EventFilter`·`EventTally`, D63)·`FrameActuator`(`RawActuator`: treeHash·refresh 확인 뒤 실행)·덤프 마스킹/기록(`DumpRecorder`) | A |
 | `service/android` | Android | `DumperService`(AccessibilityService, 화면 변경 시 `filesDir/dump.jsonl`)·노드 어댑터·제스처, **미빌드** | A |
-| `snapshot` | 순수 Kotlin | 저장 트리 JSONL v0 코덱(덤퍼가 쓰고 재생기가 읽음) | B |
+| `snapshot` | 순수 Kotlin | 저장 트리 JSONL v0 코덱(덤퍼가 쓰고 재생기가 읽음)·마스킹과 린트가 함께 쓰는 글자 접기(`PiiFold`, I-84) | B |
 | `app-core` | 순수 Kotlin | 앱 흐름 판단: 첫 실행 고지·동의(D25)·D17 일일 한도·버튼/발화 → 슬롯 채우기 → 복창·확인 → 실행 안내(`AppSession`), 매니페스트 정책 테스트 | C |
 | `app` | Android | 데모 앱: `AppSession` 화면 그리기, 실행 조립(`AgentHost`: 서비스 → gate → 상태머신), 진행 알림(지울 수 있음, D69), **미빌드** | C |
 | `mock-app` | Android | 코레일+ 흉내 4화면(S1 검색/S2 결과/S3 좌석+예매하기/S4 결제) + 변형 스위치([`mock-app/README.md`](mock-app/README.md)), **미빌드** | C |
