@@ -240,3 +240,12 @@ $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager "platform-tools" "platforms;an
 | Gradle wrapper | 8.14.3, `--max-workers=1`, `LANG=C.UTF-8`. 첫 해석에서 kotlin-stdlib 'Could not find'(Maven Central 일시 오류, curl도 404) → 30초 간격 재시도 2~3회로 통과 |
 | dl.google.com | **여전히 차단**(curl 연결 실패). app·service/android·mock-app·llm/litertlm 미빌드 |
 | 결과 | 순수 Kotlin 모듈 테스트 292개 통과(gate/core +3: TapHitTestFuzzTest — 중심 탭 좌표 겹침 1,721건 수정, I-87). `mask-lint` 저장소 검사 통과 |
+
+## 2026-10-25 (23회차)
+
+| 항목 | 결과 |
+| --- | --- |
+| JDK | 컨테이너에 21만 있어 apt `openjdk-17-jdk-headless` 설치 |
+| Gradle wrapper | 8.14.3, `--max-workers=1`, `LANG=C.UTF-8`. repo.maven.apache.org가 kotlin-stdlib pom에 429·404를 약 20분 반복(curl도 404, repo1·GCS 미러는 200) → 저장소 밖 `~/.gradle/init.d/mirror.gradle.kts`로 GCS 미러(`maven-central.storage-download.googleapis.com/maven2`)를 덧붙여 통과. 재시도 루프와 수동 빌드가 겹쳐 Kotlin 증분 캐시 경고가 났으나 `clean test`로 재확인 |
+| dl.google.com | 확인 생략(22회차까지 계속 차단). app·service/android·mock-app·llm/litertlm 미빌드 |
+| 결과 | 순수 Kotlin 모듈 테스트 295개 통과(gate/core +3: AppSwitchLockFuzzTest — 전환 중 캡처를 거친 앱 전환 잠금 우회 491회 수정, I-88). `mask-lint` 저장소 검사 통과 |
