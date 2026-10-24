@@ -1,5 +1,6 @@
 package capstone.tools
 
+import capstone.snapshot.PiiFold
 import java.io.File
 
 /**
@@ -9,6 +10,8 @@ import java.io.File
  * - 대상은 데이터 확장자만(.jsonl·.json·.csv·.tsv·.txt·.log). 코드·문서(.kt·.md)는 규칙 설명에 예시가 들어가므로 보지 않는다.
  * - 결과에는 값 자체를 찍지 않는다(CI 로그도 공개 저장소에 남는다). 종류·파일·줄·칸만.
  * - 진료과 이름은 잡지 않는다: D70 가상 프로필이 중립 과목(내과·정형외과)을 쓰므로 '테스트병원A 정형외과'는 허용. 기관명(약국 포함)만 본다.
+ * - 줄을 [PiiFold]로 접은 뒤 검사한다(전각 숫자·유니코드 대시·특수 공백·보이지 않는 문자, I-84). 보고하는 칸 번호는
+ *   보이지 않는 문자를 뺀 줄 기준이다.
  * - 패턴 린트라 이름·주소는 못 잡는다. 사람 검토를 대신하지 않는다(DumpMasker와 같은 한계, I-44).
  */
 object MaskLint {
@@ -29,9 +32,10 @@ object MaskLint {
     private const val L = """(?<![0-9A-Za-z])"""
     private const val R = """(?![0-9A-Za-z])"""
     private val patterns: List<Pair<Kind, Regex>> = listOf(
-        Kind.RRN to Regex("""$L\d{2}(0[1-9]|1[0-2])(0[1-9]|[12]\d|3[01])\s*-\s*[1-8]\d{6}$R"""),
+        Kind.RRN to Regex("""$L\d{2}(0[1-9]|1[0-2])(0[1-9]|[12]\d|3[01])\s*-\s*[1-8](?:\d{6}|[*●•xX]{6})$R"""),
         Kind.CARD to Regex("""$L\d{4}[ -]\d{4}[ -]\d{4}[ -]\d{3,4}$R"""),
-        Kind.PHONE to Regex("""${L}01[016789][ .-]?\d{3,4}[ .-]?\d{4}$R"""),
+        Kind.CARD to Regex("""$L\d{4}[ -]\d{6}[ -]\d{5}$R"""),
+        Kind.PHONE to Regex("""$L(?:\+?82[ .-]?0?|0)1[016789][ .-]?\d{3,4}[ .-]?\d{4}$R"""),
         Kind.EMAIL to Regex("""[\w.+-]+@([\w-]+(?:\.[\w-]+)+)"""),
         // 열차 날짜(2026-…)는 두고, 사람 생년으로 보이는 1900~2009년 날짜만.
         Kind.BIRTHDATE to Regex("""$L(19\d{2}|200\d)\s?[.\-/년]\s?(0?[1-9]|1[0-2])\s?[.\-/월]\s?(0?[1-9]|[12]\d|3[01])$R"""),
@@ -45,7 +49,8 @@ object MaskLint {
         "국회의원",
     )
 
-    fun scanLine(line: String): List<Pair<Kind, Int>> = buildList {
+    fun scanLine(raw: String): List<Pair<Kind, Int>> = buildList {
+        val line = PiiFold.fold(PiiFold.stripInvisible(raw))
         val taken = mutableListOf<IntRange>()
         for ((kind, re) in patterns) {
             for (m in re.findAll(line)) {
