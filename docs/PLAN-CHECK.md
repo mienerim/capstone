@@ -138,3 +138,10 @@ Notion '상세 ⑥ 개발 계획(역할·1~2주차)'(7회차 14시판, 10회차�
 | D79 A34 Qwen3 ekv1280 = 실효 1280·입력 약 896, 짧은 프롬프트 | 현 프롬프트는 2단계 기차 어림 약 1,325 → Qwen 예산 초과를 테스트로 기록(사전 검사가 막음) | ⏳ (팀 A12: 두 벌 vs 공통 짧은 판) |
 | D79 D77 상향(>1,400 → 3072)은 파일 KV ≥ 3072일 때만 | `shouldTryRaise(..., fileKv)` — 3072 미만 확인이면 false | 🔧 |
 | D57 주석: 첫날 peek 표에 max_num_tokens·prefill 시그니처, 'Using model limit' 경고 | FIRST-DAY 4절 항목 | 🔧 (문서) |
+
+## 17회차: 새 결정 없음(결정 로그 최종 D79, 상세 ⑥ 08시 절까지 대조 완료) — 9단계 테스트 보강
+
+| 항목 | 코드 | 상태 |
+| --- | --- | --- |
+| D18 ② 생성 후 스키마 재검증·D35 fail-closed | `SlotValidatorFuzzTest`(변형 10,000개)로 깊은 중첩 JSON의 `StackOverflowError` 크래시 발견 → 파싱 전 깊이 4 초과 `too_deep` 거부 | 🔧 (I-81) |
+| D79·상세 ⑥ 08시 '실험 CSV에 실효 KV 열 추가' | `docs/measurements/week1.csv` 끝에 `effective_kv` 열, FIRST-DAY 4절 문구 | 🔧 (I-82, 문서) |

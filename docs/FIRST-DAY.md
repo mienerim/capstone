@@ -140,7 +140,7 @@ adb push ./models/gemma-3n-E2B-it-int4.litertlm /sdcard/Android/data/capstone.ap
 - [ ] (16회차, D79·D57) `litert-lm-peek`로 모델 파일의 `max_num_tokens`·prefill 시그니처를 표로 적는다(Gemma 3n E2B, A34면 Qwen3도). 추정값을 쓰지 않는다
 - [ ] (D79) maxNumTokens=2048로 로드할 때 logcat에 `Using model limit` 경고가 나오는지(`adb logcat | grep -i "model limit"`). 나오면 파일 KV < 2048 → 그 값을 `LiteRtLmRunner.budget`에 넣어야 한다(I-80)
 - [ ] (D79) AAR에 `ModelInfo`·`maxContextTokens`·`isDynamicContext`가 보이는지: `unzip -l c.jar | grep -i ModelInfo`. 보이면 `LiteRtLmRunner.budget`을 그 값으로 교체, 없으면 peek 값을 상수로
-- [ ] (D79) week1.csv `measured_value`에 실효 예산 `요청,파일KV,실효`(예: `2048,,2048` = 파일 KV 미확인)를 필수로 적는다. 파일 KV가 4096 등 2048보다 크면 2048 지정 vs 미지정 PSS를 비교(KV 버퍼가 실제로 줄어드는지)
+- [ ] (D79, 17회차) week1.csv 마지막 열 `effective_kv`에 실효 예산 숫자(min(2048, 파일 KV))를 LLM이 도는 모든 행(W03·W04·W11·W12·W13)에 적는다. LLM과 무관한 행은 비운다. W03 행 `measured_value`에는 `Budget.csv()` 형식 `요청,파일KV,실효`(예: `2048,,2048` = 파일 KV 미확인)를 따옴표로 감싸 적는다(I-82). 파일 KV가 4096 등 2048보다 크면 2048 지정 vs 미지정 PSS를 비교(KV 버퍼가 실제로 줄어드는지)
 - [ ] (D79) 2단계 사전 검사로 `budget_exceeded`(되묻기)가 나오면 프롬프트가 실효 예산에 안 들어간 것 — 예시·지시를 줄일지 팀에 올린다
 - [ ] 로그 금지(D70·I-67): 토큰 수는 숫자만 week1.csv에. 프롬프트·발화·출력 원문은 logcat·파일에 남기지 않는다
 
