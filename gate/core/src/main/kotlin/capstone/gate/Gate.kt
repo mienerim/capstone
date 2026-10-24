@@ -135,7 +135,7 @@ class Gate(
             contextCheck(window, t.key)?.let { return it }
         }
         if (req is ActionRequest.TapNodeCenter) {
-            gestureOverlap(window, node)?.let { return it }
+            gestureOverlap(before, node)?.let { return it }
         }
         if (req is ActionRequest.ImeEnter) {
             window.nodes.entries.firstOrNull { (_, n) -> n.clickable && ConfirmMatcher.hardReason(n) != null }
@@ -181,12 +181,27 @@ class Gate(
         )
     }
 
-    private fun gestureOverlap(window: UiWindow, node: UiNode): Decision.Block? {
+    /**
+     * 좌표 탭은 노드가 아니라 그 자리를 덮는 무엇이든 받는다. 그래서 대상 창만이 아니라 화면의 모든 창을,
+     * 확정 노드만이 아니라 확정 라벨을 품은 클릭 가능 노드(G5 위임)까지 본다(TapHitTestFuzzTest·I-87).
+     * 창 순서(z-order)는 보지 않는다 — 아래 창과 겹쳐도 막는 쪽(fail-closed).
+     */
+    private fun gestureOverlap(snap: Snapshot, node: UiNode): Decision.Block? {
         val tap = Bounds.point(node.bounds.centerX, node.bounds.centerY).inflate(policy.touchSlopPx)
-        val hit = window.nodes.entries.firstOrNull { (_, n) ->
-            ConfirmMatcher.hardReason(n) != null && n.bounds.intersects(tap)
-        } ?: return null
-        return Decision.Block(BlockReason.CONFIRM_GESTURE_OVERLAP, listOf("overlap:${hit.key}"))
+        for (w in snap.windows) {
+            for ((k, n) in w.nodes) {
+                if (!n.bounds.intersects(tap)) continue
+                val matched = if (ConfirmMatcher.hardReason(n) != null) {
+                    k
+                } else if (n.clickable) {
+                    w.descendantsOf(k).firstOrNull { d -> w.nodes[d]?.let(ConfirmMatcher::hardReason) != null }
+                } else {
+                    null
+                } ?: continue
+                return Decision.Block(BlockReason.CONFIRM_GESTURE_OVERLAP, listOf("overlap:${w.id}:$k", "matched:$matched"))
+            }
+        }
+        return null
     }
 
     // ---- 실행 후 ----
