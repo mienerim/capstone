@@ -145,3 +145,9 @@ Notion '상세 ⑥ 개발 계획(역할·1~2주차)'(7회차 14시판, 10회차�
 | --- | --- | --- |
 | D18 ② 생성 후 스키마 재검증·D35 fail-closed | `SlotValidatorFuzzTest`(변형 10,000개)로 깊은 중첩 JSON의 `StackOverflowError` 크래시 발견 → 파싱 전 깊이 4 초과 `too_deep` 거부 | 🔧 (I-81) |
 | D79·상세 ⑥ 08시 '실험 CSV에 실효 KV 열 추가' | `docs/measurements/week1.csv` 끝에 `effective_kv` 열, FIRST-DAY 4절 문구 | 🔧 (I-82, 문서) |
+
+## 18회차: 새 결정 없음(결정 로그 최종 D79) — 9단계 테스트 보강
+
+| 항목 | 코드 | 상태 |
+| --- | --- | --- |
+| D35 fail-closed·D39 일시정지·M7(로직 층) | `RunnerFuzzTest`(결함 풀 × 이상한/빠진 슬롯 × 임의 답 × 임의 일시정지, 300회)로 빠진 슬롯의 `NoSuchElementException` 크래시 발견 → `Stopped("slot_missing:…")` | 🔧 (I-83) |
