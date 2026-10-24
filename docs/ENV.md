@@ -213,3 +213,12 @@ $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager "platform-tools" "platforms;an
 | Gradle wrapper | 8.14.3, `--max-workers=1`, `LANG=C.UTF-8`. Maven Central 첫 해석에서 429 1회 → 30초 뒤 재시도로 통과 |
 | dl.google.com | **여전히 차단**(프록시 connect_rejected). app·service/android·mock-app·llm/litertlm 미빌드 |
 | 결과 | 순수 Kotlin 모듈 테스트 280개 통과(service/core +3 DumpMaskerFuzzTest, tools +3 MaskLintVariantTest, snapshot +2 PiiFoldTest — 마스킹 우회 수정, I-84). `mask-lint` 저장소 검사 통과 |
+
+## 2026-10-24 (20회차)
+
+| 항목 | 결과 |
+| --- | --- |
+| JDK | 컨테이너에 21만 있어 apt `openjdk-17-jdk-headless` 설치 |
+| Gradle wrapper | 8.14.3 배포본 새로 받음, `--max-workers=1`, `LANG=C.UTF-8`. Maven Central 429가 여러 번(junit·kotlin-test pom) → 30~60초 간격 재시도 약 10회 끝에 통과 |
+| dl.google.com | **여전히 차단**(curl CONNECT 403). app·service/android·mock-app·llm/litertlm 미빌드 |
+| 결과 | 순수 Kotlin 모듈 테스트 283개 통과(app-core +3 AppSessionFuzzTest — D17 시계 되돌리기 우회 수정, I-85). `mask-lint` 저장소 검사 통과 |
