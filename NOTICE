@@ -1,0 +1,27 @@
+capstone — 고령층 음성 요청 기반 온디바이스 앱 대행 에이전트
+Copyright 2026 캡스톤 팀
+
+이 저장소 코드는 Apache License 2.0(LICENSE)을 따른다.
+
+아래 프로젝트는 구조·필드 설계만 참고했고 코드는 복사하지 않았다(D26·D38). 모두 Apache-2.0.
+- android/platform-samples (samples/accessibility): 접근성 서비스 선언·XML 구조
+  https://github.com/android/platform-samples
+- google-deepmind/android_env (accessibilityforwarder, proto/a11y): 노드 스냅샷 필드 구성(tools 재생기 JSONL v0)
+  https://github.com/google-deepmind/android_env
+- google-ai-edge/LiteRT-LM (kotlin/, getting_started): Engine/Conversation 초기화 순서
+  https://github.com/google-ai-edge/LiteRT-LM
+- k2-fsa/sherpa-onnx (android/): STT 데모 구조(도입 시, 코드 구조만 — 모델은 아래 STT 항목)
+  https://github.com/k2-fsa/sherpa-onnx
+
+복사 금지(라이선스): DroidRun Portal(AGPL-3.0), blurr.
+의존 라이브러리: com.google.ai.edge.litertlm:litertlm-android(Apache-2.0), Kotlin 표준 라이브러리, kotlinx-serialization-json(Apache-2.0, tools), JUnit 5(EPL-2.0, 테스트 전용).
+모델 파일(Gemma 3n E2B)은 저장소에 포함하지 않으며 Gemma 이용 약관을 따른다(D46).
+  Gemma is provided under and subject to the Gemma Terms of Use found at ai.google.dev/gemma/terms
+  금지 사용 정책: https://ai.google.dev/gemma/prohibited_use_policy
+  모델 출처: https://huggingface.co/google/gemma-3n-E2B-it-litert-lm (gemma-3n-E2B-it-int4.litertlm)
+  (Gemma 4로 바꾸면 Apache-2.0 — 10-30 C가 모델 카드 LICENSE로 확인 후 이 항목을 고친다.)
+STT 폴백 순위(D76, 아직 코드·모델 없음): ① Android SpeechRecognizer 온디바이스 ② Moonshine tiny-ko(Moonshine
+  Community License, 비상업) 또는 Whisper tiny/base(MIT) — W06 실측으로 택1해 그때 이 항목에 라이선스를 적는다.
+  Moonshine을 고르면 'Powered by Moonshine AI'를 적고, 심사위원 등 제3자에게 APK 전달은 재배포 조건 확인 전까지 보류.
+  sherpa-onnx 한국어 Zipformer 모델은 라이선스·학습 데이터(AI Hub) 조건이 확정되기 전까지 팀 기기 내부 측정만 하며
+  저장소·APK에 넣지 않고 여기에도 적지 않는다.
