@@ -83,9 +83,10 @@ class MainActivity : Activity() {
             wentToSettings = false
             onboarding.onReturnedFromSettings()
             render()
-        } else if (onboarding.screen == OnboardingScreen.Protected) {
+        } else if (!onboarding.isDone) {
             // 분기 B(D68 ③·D71): AP 상태는 매번 다시 본다. 우리가 AP를 끄라고 하지는 않는다.
-            onboarding.recheckProtection()
+            // 알림·켜졌어요 화면은 앱 밖에서 바뀐 알림·접근성도 다시 본다(I-90). 권한 결과는 onResume보다 먼저 온다.
+            onboarding.onResumed()
             render()
         }
     }

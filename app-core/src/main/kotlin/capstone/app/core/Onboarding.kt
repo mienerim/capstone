@@ -62,6 +62,8 @@ enum class HelpMode(val wire: String) { ALONE("alone"), WITH_FAMILY("family") }
  * - 이미 된 단계(알림 허용·접근성 켜짐)는 건너뛴다. 끝나면 [isDone]이 저장되고, 고지 문구 버전이 바뀌면 ②부터 다시 묻는다.
  * - Advanced Protection 켜짐이 확인되면 접근성 상태와 관계없이 [OnboardingScreen.Protected]로 간다(분기 B, D71 '안내 후 중단').
  *   AP를 확인할 수 없으면(null) 막지 않고, 접근성 2회 실패 시 분기 A에 보조 문구를 붙인다(D68 ②).
+ * - 설정 단계(④~⑦)로 넘어갈 때는 매번 [setupStep]이 기기 상태를 다시 읽는다: AP → 알림(D69 ⑤ 정의) → 접근성 순.
+ *   사용자가 앱 밖에서 상태를 바꾸므로 지나온 단계가 아직 유효하다고 가정하지 않는다(OnboardingFuzzTest·I-90).
  * - Android에서는 메인 스레드에서만 부른다고 가정한다(AppSession과 같음).
  */
 class Onboarding(
@@ -96,7 +98,7 @@ class Onboarding(
     fun accept() {
         check(screen is OnboardingScreen.Disclosure)
         consent.accept(nowMs())
-        screen = if (store.get(KEY_DONE) == DONE_VERSION) afterFamily() else OnboardingScreen.Family
+        screen = if (store.get(KEY_DONE) == DONE_VERSION) setupStep() else OnboardingScreen.Family
     }
 
     fun decline() {
@@ -108,13 +110,13 @@ class Onboarding(
     fun chooseHelp(mode: HelpMode) {
         check(screen == OnboardingScreen.Family)
         store.put(KEY_HELP, mode.wire)
-        screen = afterFamily()
+        screen = setupStep()
     }
 
-    // ④ 알림: 앱이 권한 요청 결과를 넘긴다.
+    // ④ 알림: 앱이 권한 요청 결과를 넘긴다. 권한이 허용이어도 진행 채널이 꺼져 있으면 알림 단계에 남는다(D69 ⑤).
     fun onNotificationResult(granted: Boolean) {
         check(screen is OnboardingScreen.Notifications)
-        screen = if (granted) afterNotifications() else OnboardingScreen.Notifications(denied = true)
+        screen = if (granted) setupStep(notificationsDenied = true) else OnboardingScreen.Notifications(denied = true)
     }
 
     // ⑤ 접근성: 설정 화면에서 돌아왔을 때(onResume) 부른다.
@@ -125,8 +127,8 @@ class Onboarding(
             else -> return
         }
         screen = when {
-            device.accessibilityEnabled() -> OnboardingScreen.Ready
             blockedByProtection() -> OnboardingScreen.Protected
+            device.accessibilityEnabled() -> setupStep()
             failures + 1 >= MAX_FAILURES -> OnboardingScreen.AskFamily(protectionUnknown = device.advancedProtection() == null)
             else -> OnboardingScreen.Accessibility(failures + 1)
         }
@@ -142,20 +144,38 @@ class Onboarding(
             isDone -> OnboardingScreen.Done
             consent.required -> if (store.get(KEY_DONE) == DONE_VERSION) OnboardingScreen.Disclosure() else OnboardingScreen.Greeting
             helpMode == null && store.get(KEY_DONE) != DONE_VERSION -> OnboardingScreen.Family
-            else -> afterFamily()
+            else -> setupStep()
+        }
+    }
+
+    /**
+     * 설정에서 돌아온 경우가 아닌 onResume. 분기 B는 AP를 다시 보고, 알림·완료 준비 화면은 앱 밖에서 바뀐 알림·접근성·AP를
+     * 다시 본다(알림 창이나 설정에서 직접 켜고 돌아온 경우, 켜졌어요 화면에서 알림을 끄고 온 경우).
+     * 접근성 안내 화면들은 AP만 다시 본다 — 실패 횟수는 설정에서 돌아올 때 [onReturnedFromSettings]가 센다.
+     */
+    fun onResumed() {
+        when (screen) {
+            OnboardingScreen.Protected -> recheckProtection()
+            is OnboardingScreen.Notifications, OnboardingScreen.Ready -> {
+                val next = setupStep(notificationsDenied = (screen as? OnboardingScreen.Notifications)?.denied == true)
+                if (next != screen) screen = next
+            }
+            is OnboardingScreen.Accessibility, OnboardingScreen.RestrictedSettings, is OnboardingScreen.AskFamily ->
+                if (blockedByProtection()) screen = OnboardingScreen.Protected
+            else -> Unit
         }
     }
 
     /** ⑥ '스위치가 안 눌려요'. */
     fun switchBlocked() {
         check(screen is OnboardingScreen.Accessibility || screen is OnboardingScreen.AskFamily)
-        screen = OnboardingScreen.RestrictedSettings
+        screen = if (blockedByProtection()) OnboardingScreen.Protected else OnboardingScreen.RestrictedSettings
     }
 
     /** 분기 A에서 '다시 해 볼게요'. 실패 횟수는 그대로 두지 않고 처음부터 센다. */
     fun retry() {
         check(screen is OnboardingScreen.AskFamily || screen == OnboardingScreen.RestrictedSettings)
-        screen = OnboardingScreen.Accessibility()
+        screen = if (blockedByProtection()) OnboardingScreen.Protected else OnboardingScreen.Accessibility()
     }
 
     // ⑦ 완료: 연습을 하든 건너뛰든 여기서 끝낸다(연습은 목업 시나리오로 AppSession이 돌린다).
@@ -182,11 +202,16 @@ class Onboarding(
      */
     private fun blockedByProtection(): Boolean = device.advancedProtection() == true
 
-    private fun afterFamily(): OnboardingScreen =
-        if (device.notificationsGranted()) afterNotifications() else OnboardingScreen.Notifications()
-
-    private fun afterNotifications(): OnboardingScreen =
-        if (device.accessibilityEnabled()) OnboardingScreen.Ready else OnboardingScreen.Accessibility()
+    /**
+     * ③ 다음의 설정 단계. 이미 된 단계는 건너뛰고, 아직 안 된 첫 단계를 고른다. 접근성이 켜져 있어도 AP 켜짐이면 분기 B(D71),
+     * 알림이 꺼져 있으면 접근성 단계로 넘기지 않는다(D69 ⑤). [notificationsDenied]는 알림 단계에 남을 때 거부 안내를 보일지.
+     */
+    private fun setupStep(notificationsDenied: Boolean = false): OnboardingScreen = when {
+        blockedByProtection() -> OnboardingScreen.Protected
+        !device.notificationsGranted() -> OnboardingScreen.Notifications(denied = notificationsDenied)
+        !device.accessibilityEnabled() -> OnboardingScreen.Accessibility()
+        else -> OnboardingScreen.Ready
+    }
 
     companion object {
         /** 분기 A로 가는 실패 횟수(D66 '미허용 2회'). */
