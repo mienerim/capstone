@@ -108,6 +108,54 @@ class FrameActuatorTest {
     }
 
     @Test
+    fun `클릭 직전 버튼 안에 확정 라벨 자식이 생기면 누르지 않는다`() {
+        val r = Rig()
+        val ref = r.ref("0/2")
+        val button = r.screen.kids[2] as FakeNode
+        button.kids += FakeNode(text = "예매하기", bounds = Bounds(100, 420, 200, 480))
+        assertFalse(r.actuator.click(ref))
+        assertTrue(button.performed.isEmpty())
+    }
+
+    @Test
+    fun `중심 탭 직전 확정 버튼이 덮으면 탭하지 않는다 - 형제와 새 창 (I-86)`() {
+        val r = Rig()
+        val ref = r.ref("0/2")
+        r.screen.kids += FakeNode(text = "예매하기", clickable = true, bounds = Bounds(100, 420, 200, 480))
+        assertFalse(r.actuator.tapCenter(ref))
+
+        val windows = mutableListOf(FakeWindow(1, searchScreen()))
+        val holder = FrameHolder { TreeCapture().capture(windows.toList(), 0) }
+        val device = FakeDevice()
+        val actuator = FrameActuator(holder, device)
+        val ref2 = NodeRef.of(holder.capture().window(1)!!, "0/2")
+        windows.add(0, FakeWindow(2, FakeNode(text = "결제하기", clickable = true, bounds = Bounds(0, 400, 300, 500)), active = false, focused = false))
+        assertFalse(actuator.tapCenter(ref2))
+        assertTrue(device.taps.isEmpty() && r.device.taps.isEmpty())
+    }
+
+    @Test
+    fun `IME 확인 직전 화면 어딘가에 확정 버튼이 생기면 보내지 않는다`() {
+        val r = Rig()
+        val ref = r.ref("0/1")
+        r.screen.kids += FakeNode(className = "android.widget.Button", text = "예매하기", clickable = true, bounds = Bounds(0, 600, 300, 700))
+        assertFalse(r.actuator.imeEnter(ref))
+        assertTrue((r.screen.kids[1] as FakeNode).performed.isEmpty())
+        // 화면이 그대로면 보낸다.
+        assertTrue(r.actuator.imeEnter(r.ref("0/1")))
+    }
+
+    @Test
+    fun `스크롤은 목록 아래가 늘어나도 같은 노드로 본다`() {
+        val list = FakeNode(className = "android.widget.ListView", scrollable = true, bounds = Bounds(0, 600, 1080, 2000))
+        val root = searchScreen().apply { kids += list }
+        val r = Rig(root)
+        val ref = r.ref("0/3")
+        list.kids += FakeNode(text = "KTX 103", bounds = Bounds(0, 600, 1080, 700))
+        assertTrue(r.actuator.scroll(ref, forward = true))
+    }
+
+    @Test
     fun `back은 기기 동작으로 간다`() {
         val r = Rig()
         assertTrue(r.actuator.back())

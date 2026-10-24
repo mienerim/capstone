@@ -26,13 +26,15 @@ class FakeNode(
 ) : A11yNode {
     var alive: Boolean = true
     val performed: MutableList<NodeOp> = mutableListOf()
+    /** false면 performAction이 실패한 것처럼 돌려준다(CLICK 실패 → 중심 탭 폴백 경로). */
+    var performResult: Boolean = true
 
     override val childCount: Int get() = kids.size
     override fun child(index: Int): A11yNode? = kids[index]
     override fun refresh(): Boolean = alive
     override fun perform(op: NodeOp): Boolean {
         performed += op
-        return true
+        return performResult
     }
 }
 
