@@ -231,3 +231,12 @@ $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager "platform-tools" "platforms;an
 | Gradle wrapper | 8.14.3 배포본 새로 받음, `--max-workers=1`, `LANG=C.UTF-8`. Maven Central 429가 여러 번 → Gradle이 429를 'Could not find'로 보고하기도 함(curl은 200). 60초 간격 재시도로 통과. `--refresh-dependencies`는 요청이 늘어 오히려 429가 잦았다 |
 | dl.google.com | 확인 생략(20회차까지 계속 차단). app·service/android·mock-app·llm/litertlm 미빌드 |
 | 결과 | 순수 Kotlin 모듈 테스트 289개 통과(service/core +6: FrameActuatorRaceFuzzTest 2 — 실행 경합 856건 수정, FrameActuatorTest 4, I-86). `mask-lint` 저장소 검사 통과 |
+
+## 2026-10-25 (22회차)
+
+| 항목 | 결과 |
+| --- | --- |
+| JDK | 컨테이너에 21만 있어 apt `openjdk-17-jdk-headless` 설치 |
+| Gradle wrapper | 8.14.3, `--max-workers=1`, `LANG=C.UTF-8`. 첫 해석에서 kotlin-stdlib 'Could not find'(Maven Central 일시 오류, curl도 404) → 30초 간격 재시도 2~3회로 통과 |
+| dl.google.com | **여전히 차단**(curl 연결 실패). app·service/android·mock-app·llm/litertlm 미빌드 |
+| 결과 | 순수 Kotlin 모듈 테스트 292개 통과(gate/core +3: TapHitTestFuzzTest — 중심 탭 좌표 겹침 1,721건 수정, I-87). `mask-lint` 저장소 검사 통과 |
