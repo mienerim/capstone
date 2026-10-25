@@ -118,10 +118,19 @@ data class Snapshot(
     /** takeScreenshotOfWindow 오류 코드(API 34). null = 오류 없음 또는 미측정. */
     val screenshotError: Int? = null,
 ) {
-    /** 패키지 허용목록 판정 대상: 활성·포커스 TYPE_APPLICATION 창(D36). 없으면 활성 APPLICATION 창. */
+    /**
+     * 패키지 허용목록 판정 대상: 활성·포커스 TYPE_APPLICATION 창(D36). 없으면 활성 APPLICATION 창.
+     * 후보가 둘 이상이거나 창 id가 겹치면 null(앞 앱 모름): 창 목록 순서로 고르면 같은 화면이 순서에 따라
+     * 허용·차단이 갈린다(ForegroundAmbiguityFuzzTest·I-96).
+     */
     val foregroundAppWindow: UiWindow?
-        get() = windows.firstOrNull { it.type == WindowType.APPLICATION && it.active && it.focused }
-            ?: windows.firstOrNull { it.type == WindowType.APPLICATION && it.active }
+        get() {
+            if (hasDuplicateWindowIds) return null
+            val apps = windows.filter { it.type == WindowType.APPLICATION }
+            return apps.filter { it.active && it.focused }.ifEmpty { apps.filter { it.active } }.singleOrNull()
+        }
+
+    val hasDuplicateWindowIds: Boolean get() = windows.distinctBy { it.id }.size != windows.size
 
     fun window(id: Int): UiWindow? = windows.firstOrNull { it.id == id }
 

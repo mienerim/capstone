@@ -82,6 +82,9 @@ class Gate(
             return Decision.Block(BlockReason.FAIL_CLOSED_SCREENSHOT_ERROR, listOf("screenshot_error:$code", tag))
         }
         if (snap.windows.isEmpty()) return Decision.Block(BlockReason.FAIL_CLOSED_EMPTY_TREE, listOf("no_windows"))
+        if (snap.hasDuplicateWindowIds) {
+            return Decision.Block(BlockReason.FAIL_CLOSED_SCREEN_SIGNATURE, listOf("duplicate_window_id"))
+        }
         val fg = snap.foregroundAppWindow
             ?: return Decision.Block(BlockReason.FAIL_CLOSED_PACKAGE_MISMATCH, listOf("no_foreground_app_window"))
         if (fg.packageName == null || fg.packageName !in policy.allowedPackages) {

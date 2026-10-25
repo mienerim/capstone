@@ -90,6 +90,18 @@ class ScreenClassifierTest {
     }
 
     @Test
+    fun `활성·포커스 앱 창이 둘이면 창 순서와 무관하게 UNKNOWN`() {
+        // 전환 순간·분할 화면의 애매한 캡처(I-96): 목록 앞 창을 고르면 순서에 따라 SEARCH_FORM·FOREIGN_APP이 갈렸다.
+        val form = screen(edit("출발역"), button("조회하기")).windows.first()
+        val talk = UiWindow(3, WindowType.APPLICATION, "com.kakao.talk", active = true, focused = true, root = text("채팅"))
+        for (ws in listOf(listOf(form, talk), listOf(talk, form))) {
+            val c = classifier.classify(Snapshot(0, ws))
+            assertEquals(Screens.UNKNOWN, c.screen)
+            assertEquals("no_foreground_window", c.reason)
+        }
+    }
+
+    @Test
     fun `잘못된 서명 정의는 거부`() {
         assertThrows(IllegalArgumentException::class.java) { ScreenSignature("X", setOf(pkg), mustHave = emptyList()) }
         assertThrows(IllegalArgumentException::class.java) { ScreenSignature(Screens.UNKNOWN, setOf(pkg), listOf(NodeMatcher(text = "a"))) }
