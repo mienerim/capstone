@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="a11y_service_label">말로 하는 예매 도우미</string>
+    <string name="a11y_service_description">말로 요청하면 코레일+ 화면을 대신 눌러 열차 검색과 좌석 배정까지 하고, \'예매하기\' 버튼 앞에서 멈춥니다. 결제와 마지막 버튼은 직접 누릅니다. 화면 내용은 휴대폰 밖으로 보내지 않습니다.</string>
+</resources>

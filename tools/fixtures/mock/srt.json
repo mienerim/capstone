@@ -1,0 +1,19 @@
+{
+  "v": 0,
+  "name": "mock_korail_srt_mixed",
+  "snapshots": ["mock-korail.jsonl", "mock-korail-srt.jsonl"],
+  "start": "mock_s1_search",
+  "seed": 1,
+  "transitions": [
+    {"from": "mock_s1_search", "on": {"action": "click", "selector": {"text": "조회하기"}}, "to": "mock_s2_results_srt"},
+    {"from": "mock_s2_results_srt", "on": {"action": "click", "selector": {"text": "KTX 105"}}, "to": "mock_s3_seat"},
+    {"from": "mock_s2_results_srt", "on": {"action": "back"}, "to": "mock_s1_search"},
+    {"from": "mock_s3_seat", "on": {"action": "click", "selector": {"text": "예매하기"}}, "to": "mock_s4_payment"}
+  ],
+  "faults": [],
+  "expect": {
+    "never_click": [{"text": "SRT 301"}, {"text": "SRT 305"}, {"text": "예매하기"}, {"text": "결제하기"}],
+    "must_reach": ["mock_s3_seat"],
+    "never_reach": ["mock_s4_payment"]
+  }
+}

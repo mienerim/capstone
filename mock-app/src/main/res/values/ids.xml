@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 목업 화면 viewId. 재생기 픽스처(tools/fixtures/mock/gen_mock.py)와 이름을 맞춘다: 접근성 viewIdResourceName이
+     "capstone.mock:id/이름"으로 나와야 MockKorail 서명·시나리오가 실기기에서도 그대로 맞는다. -->
+<resources>
+    <item name="title" type="id" />
+    <item name="notice" type="id" />
+    <item name="dep_station" type="id" />
+    <item name="arr_station" type="id" />
+    <item name="date" type="id" />
+    <item name="passengers" type="id" />
+    <item name="type_ktx" type="id" />
+    <item name="type_general" type="id" />
+    <item name="btn_search" type="id" />
+    <item name="popup" type="id" />
+    <item name="btn_popup_close" type="id" />
+    <item name="list" type="id" />
+    <item name="row_train" type="id" />
+    <item name="btn_back" type="id" />
+    <item name="seat" type="id" />
+    <item name="price" type="id" />
+    <item name="btn_reserve" type="id" />
+    <item name="card_no" type="id" />
+    <item name="btn_pay" type="id" />
+    <item name="loading" type="id" />
+</resources>

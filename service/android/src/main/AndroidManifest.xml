@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+    <application>
+        <!-- 사용자가 설정 > 접근성 > 설치된 앱에서 직접 켠다(앱이 스스로 켤 수 없음). ADB 설치 앱은
+             '제한된 설정 허용'이 먼저 필요할 수 있다(docs/FIRST-DAY.md). -->
+        <service
+            android:name="capstone.service.DumperService"
+            android:exported="true"
+            android:label="@string/a11y_service_label"
+            android:permission="android.permission.BIND_ACCESSIBILITY_SERVICE">
+            <intent-filter>
+                <action android:name="android.accessibilityservice.AccessibilityService" />
+            </intent-filter>
+            <meta-data
+                android:name="android.accessibilityservice"
+                android:resource="@xml/accessibility_service_config" />
+        </service>
+    </application>
+</manifest>

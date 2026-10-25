@@ -1,0 +1,16 @@
+# 초안(D37 안 1). 팀원 GitHub 아이디가 정해지면 아래 주석을 풀고 바꾼다.
+# 리뷰 순환: A→B→C→A. gate 작성자(B)와 결함 주입 작성자(C)는 분리한다.
+*                     @mienerim
+
+# A: service, app-scenarios
+# /service/           @<A>
+# /app-scenarios/     @<A>
+# B: gate, agent-core, tools, CI
+# /gate/              @<B>
+# /agent-core/        @<B>
+# /tools/             @<B>
+# /.github/           @<B>
+# C: llm, app, mock-app (+ gate 결함·변형 풀)
+# /llm/               @<C>
+# /app/               @<C>
+# /mock-app/          @<C>
