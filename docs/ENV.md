@@ -276,3 +276,12 @@ $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager "platform-tools" "platforms;an
 | Gradle wrapper | 8.14.3, `--max-workers=1`, `LANG=C.UTF-8`. 첫 시도에서 Maven Central이 `kotlin-build-tools-impl:2.2.20`에 404 → 저장소 밖 `~/.gradle/init.d/mirror.gradle.kts`(GCS 미러, `settingsEvaluated`에서 pluginManagement·dependencyResolutionManagement에만 추가 — `allprojects.repositories`에 넣으면 FAIL_ON_PROJECT_REPOS 설정 때문에 실패)로 통과 |
 | dl.google.com | 여전히 차단(curl 연결 실패). app·service/android·mock-app·llm/litertlm 미빌드 |
 | 결과 | 순수 Kotlin 모듈 테스트 304개 통과(service/core +2: CapturePipelineFuzzTest — 루트 패키지 읽기 예외 크래시 378회 수정, I-91). `mask-lint` 저장소 검사 통과 |
+
+## 2026-10-25 (27회차)
+
+| 항목 | 결과 |
+| --- | --- |
+| JDK | 컨테이너에 21만 있어 apt `openjdk-17-jdk-headless` 설치 |
+| Gradle wrapper | 8.14.3, `--max-workers=1`, `LANG=C.UTF-8`. 저장소 밖 `~/.gradle/init.d/mirror.gradle.kts`(GCS 미러, settings 저장소에만)를 먼저 깔아 한 번에 통과 |
+| dl.google.com | 확인 생략(26회차까지 계속 차단). app·service/android·mock-app·llm/litertlm 미빌드 |
+| 결과 | 순수 Kotlin 모듈 테스트 307개 통과(gate/exec +3: LyingActuatorFuzzTest — 바뀐 화면 폴백 탭 2,004회·실제 전환 뒤 ALLOW 169회 수정, I-92). `mask-lint` 저장소 검사 통과 |
