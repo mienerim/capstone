@@ -322,3 +322,12 @@ $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager "platform-tools" "platforms;an
 | Gradle wrapper | 8.14.3 배포본 새로 받음, `--max-workers=1`, `LANG=C.UTF-8`. 저장소 밖 `~/.gradle/init.d/mirror.gradle.kts`(GCS 미러, settings 저장소에만)를 먼저 깔아 한 번에 통과 |
 | dl.google.com | 확인 생략(26회차까지 계속 차단). app·service/android·mock-app·llm/litertlm 미빌드 |
 | 결과 | 순수 Kotlin 모듈 테스트 323개 통과(gate/core +4: ForegroundAmbiguityFuzzTest — 창 순서에 따라 갈리던 check 488건·checkAfter 730건 수정, I-96; agent-core +1: 분류기 애매한 앞 앱 UNKNOWN, 새 퍼즈 3회 반복 통과). `mask-lint` 저장소 검사 통과 |
+
+## 2026-10-25 (32회차)
+
+| 항목 | 결과 |
+| --- | --- |
+| JDK | 컨테이너에 21만 있어 apt `openjdk-17-jdk-headless` 설치 |
+| Gradle wrapper | 8.14.3 배포본 새로 받음, `--max-workers=1`, `LANG=C.UTF-8`. 저장소 밖 `~/.gradle/init.d/mirror.gradle.kts`(GCS 미러, settings 저장소에만)를 먼저 깔아 한 번에 통과 |
+| dl.google.com | 확인 생략(26회차까지 계속 차단). app·service/android·mock-app·llm/litertlm 미빌드 |
+| 결과 | 순수 Kotlin 모듈 테스트 326개 통과(gate/core +3: CollapseBaselineFuzzTest — 분류된 숨은 화면 checkAfter 허용 5,179건·기준선 오염 check 통과 306건 수정, I-97). `mask-lint` 저장소 검사 통과 |
