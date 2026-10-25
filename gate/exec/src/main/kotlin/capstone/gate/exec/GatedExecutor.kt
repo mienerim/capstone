@@ -31,6 +31,9 @@ fun interface SnapshotSource {
 /**
  * 유일한 [ActionExecutor] 구현. check → raw 실행 → checkAfter.
  * CLICK이 실패하면 같은 노드의 중심 탭을 1회만, 다시 gate를 거쳐 시도한다(D2 폴백도 gate 안).
+ *
+ * raw의 false·예외는 '실행 안 됨'을 보장하지 않는다(앱이 클릭을 처리하고 false, 효과 뒤 바인더 예외).
+ * 그래서 시도했으면 결과와 관계없이 checkAfter를 거치고, 폴백 탭은 다시 캡처한 화면으로 판정한다(I-92).
  */
 class GatedExecutor(
     private val gate: Gate,
@@ -42,19 +45,28 @@ class GatedExecutor(
         val pre = gate.check(before, request)
         if (pre is Decision.Block) return ExecResult.Blocked(pre)
 
+        var from = before
         var executed = request
         var ok = runRaw(request)
         if (!ok && request is ActionRequest.Click) {
+            val seen = snapshots.capture()
+            val after = gate.checkAfter(before, seen, request)
+            if (after is Decision.Block) return ExecResult.Blocked(after)
+            // 화면이 바뀌었으면 treeHash가 달라 gate가 막는다: 다음 화면의 같은 자리를 탭하지 않는다.
             val fallback = ActionRequest.TapNodeCenter(request.target, request.expectedPackage, request.expectedScreen)
-            val fb = gate.check(before, fallback)
+            val fb = gate.check(seen, fallback)
             if (fb is Decision.Block) return ExecResult.Blocked(fb)
+            from = seen
             executed = fallback
             ok = runRaw(fallback)
         }
-        if (!ok) return ExecResult.Failed("raw ${executed.kind} failed")
 
-        val after = gate.checkAfter(before, snapshots.capture(), executed)
-        return if (after is Decision.Block) ExecResult.Blocked(after) else ExecResult.Done
+        val after = gate.checkAfter(from, snapshots.capture(), executed)
+        return when {
+            after is Decision.Block -> ExecResult.Blocked(after)
+            ok -> ExecResult.Done
+            else -> ExecResult.Failed("raw ${executed.kind} failed")
+        }
     }
 
     private fun runRaw(req: ActionRequest): Boolean = try {
