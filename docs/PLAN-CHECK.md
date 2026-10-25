@@ -234,3 +234,10 @@ Notion '상세 ⑥ 개발 계획(역할·1~2주차)'(7회차 14시판, 10회차�
 | D11 앱 쪽 생성 워치독(시간·토큰)·#3510 취소 | `GeneratorFuzzTest`(취소 늦음·무시·sink false 무시·예외 러너 × 연달아 6번 생성, 120개 순서) → 시간 초과로 버린 생성이 아직 엔진 안에 있는데 다음 생성 시작 39개 순서(최대 3개 동시) → 앞 호출이 끝나기를 이번 한도 안에서 기다리고 아니면 `RUNNER_BUSY`(러너 안 부름), 어댑터는 조기 종료 때 `cancelProcess` | 🔧 (I-95, LiteRtLmRunner 미빌드) |
 | 실기기 cancelProcess 지연 | 퍼즈 가정만 | ⏳ (C·W12: 시간 초과 뒤 다음 생성까지 RUNNER_BUSY가 나오는지 시도 기록으로 확인) |
 
+
+## 31회차: 새 결정 없음(결정 로그 최종 D79) — 9단계 테스트 보강
+
+| 항목 | 코드 | 상태 |
+| --- | --- | --- |
+| D36 활성·포커스 APPLICATION 창으로 패키지 허용목록 판정·D35 fail-closed | `ForegroundAmbiguityFuzzTest`(다른 APPLICATION 창 0~2개 × 활성/포커스 4조합 × 창 id 겹침, 같은 창 6가지 순서, check·checkAfter 각 3,000회) → 목록 앞 창을 앞 앱으로 골라 check 488건·checkAfter 730건이 창 순서에 따라 허용·차단·잠금이 갈림 → 후보가 하나가 아니거나 id가 겹치면 앞 앱 모름(막고, 잠금은 다음 확정 캡처로 미룸) | 🔧 (I-96) |
+| 실기기 getWindows의 활성·포커스 창 수 | 정상이면 하나라 가정 | ⏳ (A·10-27 덤프 때 dump.jsonl에 `no_foreground` 건너뜀이 잦은지 확인) |
