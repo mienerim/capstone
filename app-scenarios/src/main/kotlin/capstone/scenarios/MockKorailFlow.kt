@@ -19,6 +19,9 @@ object MockKorailFlow {
     const val SLOT_DESTINATION = "destination"
     const val SLOT_TRAIN = "train"
 
+    /** 이 흐름이 화면에 넣는 사용자 슬롯. 날짜·시간·열차 종류·인원은 아직 단계가 없어 복창이 '직접 확인'으로 알린다(I-94). */
+    val APPLIED_SLOTS: Set<String> = setOf(SLOT_ORIGIN, SLOT_DESTINATION)
+
     /** SRT는 다른 운영사·결제 흐름이라 범위 밖. 라벨 앞머리로 판단한다(정규화 후 'srt'로 시작). */
     fun isServedTrain(label: String): Boolean = !LabelNormalizer.normalize(label).startsWith("srt")
 

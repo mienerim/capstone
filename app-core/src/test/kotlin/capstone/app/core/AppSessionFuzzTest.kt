@@ -74,7 +74,7 @@ class AppSessionFuzzTest {
 
         val session = AppSession(
             store,
-            scenarioFor = { s -> if (s.intent == Intent.TRAIN_BOOK) Scenario(MockKorailFlow.flow, liveService = live) else null },
+            scenarioFor = { s -> if (s.intent == Intent.TRAIN_BOOK) Scenario(MockKorailFlow.flow, liveService = live, applies = MockKorailFlow.APPLIED_SLOTS) else null },
             startRunner = ::startRunner,
             nowMs = { realMs + offsetMs },
         )

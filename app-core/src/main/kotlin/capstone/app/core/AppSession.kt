@@ -21,6 +21,11 @@ class Scenario(
     val liveService: Boolean,
     /** 검증된 슬롯 v1 → 상태머신 슬롯(이름은 D30 wire). */
     val toFlowSlots: (SlotsV1, LocalDate) -> Slots = ::defaultFlowSlots,
+    /**
+     * 이 흐름이 실제로 화면에 넣는 슬롯(wire). 복창은 이 밖의 조건을 '직접 확인'하라고 알린다(I-94).
+     * 기본값은 비어 있음 — 선언하지 않은 흐름은 아무 조건도 넣지 않는다고 보고 다 알린다.
+     */
+    val applies: Set<String> = emptySet(),
 )
 
 fun defaultFlowSlots(s: SlotsV1, today: LocalDate): Slots = buildMap {
@@ -190,12 +195,26 @@ class AppSession(
         next()
     }
 
-    /** 복창 화면의 '네'/'아니요'. */
+    /**
+     * 복창 화면의 '네'/'아니요'. '네'는 그 문장 그대로 실행할 수 있을 때만 시작한다(I-94): 복창을 띄운 뒤 자정을 넘겨
+     * '내일'이 다른 날이 됐거나 문장이 바뀌면 새 문장으로 다시 묻고, 날짜가 지났으면 날짜를 다시 묻는다.
+     */
     fun confirm(yes: Boolean) {
-        check(screen is AppScreen.Confirm)
+        val shown = screen as? AppScreen.Confirm ?: error("Confirm이 아님: $screen")
         val s = slots ?: error("슬롯 없음")
         if (!yes) {
             reset("다시 말씀해 주세요.")
+            return
+        }
+        val today = today()
+        if (s.resolveDate(today)?.let { it < today } == true) {
+            slots = s.copy(date = null, dateRel = null)
+            next()
+            return
+        }
+        val text = readback(s, today)
+        if (text != shown.text) {
+            screen = AppScreen.Confirm(text)
             return
         }
         val scenario = scenarioFor(s) ?: run {
@@ -206,7 +225,7 @@ class AppSession(
             screen = AppScreen.Finished("오늘은 더 진행할 수 없어요(하루 5번까지). 내일 다시 해 주세요.", success = false)
             return
         }
-        val r = startRunner(scenario.flow, scenario.toFlowSlots(s, today()))
+        val r = startRunner(scenario.flow, scenario.toFlowSlots(s, today))
         runner = r
         onRunState(r.state)
     }
@@ -272,9 +291,11 @@ class AppSession(
         screen = if (missing != null) {
             AppScreen.AskSlot(missing, Readback.question(missing), options(missing, s))
         } else {
-            AppScreen.Confirm(Readback.confirm(s, today()))
+            AppScreen.Confirm(readback(s, today()))
         }
     }
+
+    private fun readback(s: SlotsV1, today: LocalDate): String = Readback.confirm(s, today, scenarioFor(s)?.applies.orEmpty())
 
     private fun options(slot: SlotName, s: SlotsV1): List<String> = when (slot) {
         SlotName.ORIGIN -> MAJOR_STATIONS.filter { it != s.destination }

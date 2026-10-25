@@ -61,7 +61,7 @@ class OnboardingSessionTest {
     private fun onboarding() = Onboarding(store, device, nowMs = { now })
     private fun session() = AppSession(
         store,
-        scenarioFor = { s -> if (s.intent == Intent.TRAIN_BOOK) Scenario(MockKorailFlow.flow, liveService = false) else null },
+        scenarioFor = { s -> if (s.intent == Intent.TRAIN_BOOK) Scenario(MockKorailFlow.flow, liveService = false, applies = MockKorailFlow.APPLIED_SLOTS) else null },
         startRunner = ::startReplay,
         nowMs = { now },
     )

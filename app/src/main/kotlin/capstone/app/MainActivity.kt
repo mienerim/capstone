@@ -69,7 +69,7 @@ class MainActivity : Activity() {
         onboarding = Onboarding(store, AndroidDeviceChecks(this))
         session = AppSession(
             store,
-            scenarioFor = { s -> if (s.intent == SlotIntent.TRAIN_BOOK) Scenario(MockKorailFlow.flow, liveService = false) else null },
+            scenarioFor = { s -> if (s.intent == SlotIntent.TRAIN_BOOK) Scenario(MockKorailFlow.flow, liveService = false, applies = MockKorailFlow.APPLIED_SLOTS) else null },
             startRunner = host::start,
         )
         handlePause(intent)

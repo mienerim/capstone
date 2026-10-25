@@ -61,7 +61,7 @@ class AppSessionTest {
 
     private fun session(store: KeyValueStore = MemoryStore()) = AppSession(
         store,
-        scenarioFor = { s -> if (s.intent == Intent.TRAIN_BOOK) Scenario(MockKorailFlow.flow, liveService = live) else null },
+        scenarioFor = { s -> if (s.intent == Intent.TRAIN_BOOK) Scenario(MockKorailFlow.flow, liveService = live, applies = MockKorailFlow.APPLIED_SLOTS) else null },
         startRunner = ::startReplay,
         nowMs = { now },
     )
@@ -101,7 +101,7 @@ class AppSessionTest {
         s.choose("부산")
         s.choose("내일")
         val confirm = assertIs<AppScreen.Confirm>(s.screen)
-        assertEquals("내일 10월 24일(토) 서울에서 부산 가는 열차를 찾을까요?", confirm.text)
+        assertEquals("내일 10월 24일(토) 서울에서 부산 가는 열차를 찾을까요? 날짜는 제가 넣지 않아요. 앱 화면에서 직접 확인해 주세요.", confirm.text)
         assertTrue(started.isEmpty()) // 확인 전에는 실행하지 않는다(D16)
 
         s.confirm(true)
