@@ -48,7 +48,15 @@ class TreeCapture(
             } catch (_: RuntimeException) {
                 null
             }
-            val pkg = root?.packageName
+            // 루트 패키지 읽기도 재활용된 노드에서는 던질 수 있다. 패키지를 모르면 순회 대상인지 정할 수 없으므로
+            // 순회하지 않고 루트를 비운다(패키지 null → gate는 앞 앱 없음으로 막는다, I-91).
+            val pkg = try {
+                root?.packageName
+            } catch (_: RuntimeException) {
+                uiWindows += UiWindow(id = w.id, type = w.type, packageName = null, active = w.active, focused = w.focused, root = null)
+                dropped += w.id
+                continue
+            }
             if (root != null && targetPackages != null && pkg !in targetPackages) {
                 uiWindows += UiWindow(id = w.id, type = w.type, packageName = pkg, active = w.active, focused = w.focused, root = null)
                 continue
