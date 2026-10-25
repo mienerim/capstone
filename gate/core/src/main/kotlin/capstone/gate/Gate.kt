@@ -247,8 +247,12 @@ class Gate(
         }
         val fg = after.foregroundAppWindow!!
         // 새 화면이 분류되지 않았으면 직전 화면과 직접 비교해 급감을 본다(D35 ②).
-        if (after.screen == null && beforeFg != null) {
-            collapsed(Counts(beforeFg.nodeCount, beforeFg.interactiveCount), fg)?.let { return it }
+        // 분류됐으면 그 (패키지, 화면) 기준선과 비교한다: 안 보면 같은 화면으로 분류된 숨은 화면이 기준선에
+        // 들어가 중앙값을 끌어내리고, 다음 check에서 숨은 화면이 통과한다(CollapseBaselineFuzzTest·I-97).
+        if (after.screen == null) {
+            if (beforeFg != null) collapsed(Counts(beforeFg.nodeCount, beforeFg.interactiveCount), fg)?.let { return it }
+        } else {
+            collapseAgainstBaseline(after, fg)?.let { return it }
         }
         remember(after, fg)
         return Decision.Allow()
