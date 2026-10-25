@@ -294,3 +294,12 @@ $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager "platform-tools" "platforms;an
 | Gradle wrapper | 8.14.3 배포본 새로 받음, `--max-workers=1`, `LANG=C.UTF-8`. 저장소 밖 `~/.gradle/init.d/mirror.gradle.kts`(GCS 미러, settings 저장소에만)를 먼저 깔아 한 번에 통과 |
 | dl.google.com | 확인 생략(26회차까지 계속 차단). app·service/android·mock-app·llm/litertlm 미빌드 |
 | 결과 | 순수 Kotlin 모듈 테스트 310개 통과(gate/core +3: ImeEnterFuzzTest — G5·클릭 표시 없는 제출·바텀시트 확정 신호를 놓친 IME 엔터 1,124건 수정, I-93). `mask-lint` 저장소 검사 통과 |
+
+## 2026-10-25 (29회차)
+
+| 항목 | 결과 |
+| --- | --- |
+| JDK | 컨테이너에 21만 있어 apt `openjdk-17-jdk-headless` 설치 |
+| Gradle wrapper | 8.14.3, `--max-workers=1`, `LANG=C.UTF-8`. 첫 시도에서 Maven Central이 `kotlin-gradle-plugins-bom:2.2.20`에 404(GCS 미러 init 스크립트를 깔았는데도 플러그인 해석은 미러를 안 거침) → 몇 분 뒤 `--refresh-dependencies`로 통과(curl로 두 저장소 모두 200 확인) |
+| dl.google.com | 확인 생략(26회차까지 계속 차단). app·service/android·mock-app·llm/litertlm 미빌드 |
+| 결과 | 순수 Kotlin 모듈 테스트 315개 통과(app-core +5: ReadbackFuzzTest — 복창이 알리지 않고 버린 조건 5,034건·자정 넘긴 날짜 어긋남 280건 수정, I-94). `mask-lint` 저장소 검사 통과 |
