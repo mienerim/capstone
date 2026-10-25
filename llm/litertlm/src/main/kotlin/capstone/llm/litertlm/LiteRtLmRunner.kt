@@ -76,15 +76,21 @@ class LiteRtLmRunner(
             ),
         )
         current = conversation
+        var stoppedEarly = true
         try {
             runBlocking {
                 job = coroutineContext[Job]
                 val format = request.responseSchema?.let { ResponseFormat.json(it) }
+                var accepted = true
                 conversation.sendMessageAsync(request.userText, responseFormat = format)
-                    .takeWhile { msg -> sink(msg.toString()) }
+                    .takeWhile { msg -> sink(msg.toString()).also { accepted = it } }
                     .collect {}
+                stoppedEarly = !accepted
             }
         } finally {
+            // sink가 멈추라고 했거나(워치독) 예외로 나가면 수집만 끝나고 네이티브 생성은 계속 돈다(awaitClose가 비어 있음).
+            // 다음 요청이 같은 엔진에 겹치지 않도록 대화를 닫기 전에 생성을 먼저 멈춘다(I-95).
+            if (stoppedEarly) runCatching { conversation.cancelProcess() }
             job = null
             current = null
             conversation.close()
