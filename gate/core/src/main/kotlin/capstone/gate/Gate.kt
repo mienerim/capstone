@@ -145,12 +145,7 @@ class Gate(
         if (req is ActionRequest.TapNodeCenter) {
             gestureOverlap(before, node)?.let { return it }
         }
-        if (req is ActionRequest.ImeEnter) {
-            window.nodes.entries.firstOrNull { (_, n) -> n.clickable && ConfirmMatcher.hardReason(n) != null }
-                ?.let { (k, _) ->
-                    return Decision.Block(BlockReason.CONFIRM_ANCESTOR_DELEGATE, listOf("ime_enter_with_confirm_on_screen:$k"))
-                }
-        }
+        if (req is ActionRequest.ImeEnter) imeEnterCheck(before, window)?.let { return it }
         if (ConfirmMatcher.hasPartial(node)) signals += "partial:${t.key}"
         return null
     }
@@ -208,6 +203,20 @@ class Gate(
                 } ?: continue
                 return Decision.Block(BlockReason.CONFIRM_GESTURE_OVERLAP, listOf("overlap:${w.id}:$k", "matched:$matched"))
             }
+        }
+        return null
+    }
+
+    /**
+     * IME 엔터는 노드가 아니라 앱의 입력 처리기가 받아 무엇이든 제출할 수 있다. 그래서 대상 앱의 모든 창에서
+     * 확정 신호가 하나라도 보이면 막는다. 클릭 가능 여부는 보지 않는다: 글자는 자식·클릭은 부모(G5, S3 구조)이거나
+     * WebView 제출 버튼처럼 클릭 표시가 없을 수 있다(ImeEnterFuzzTest·I-93). 키보드·시스템 창은 다른 패키지라 뺀다.
+     */
+    private fun imeEnterCheck(snap: Snapshot, target: UiWindow): Decision.Block? {
+        for (w in snap.windows) {
+            if (w.packageName != target.packageName) continue
+            val k = w.nodes.entries.firstOrNull { (_, n) -> ConfirmMatcher.hardReason(n) != null }?.key ?: continue
+            return Decision.Block(BlockReason.CONFIRM_ANCESTOR_DELEGATE, listOf("ime_enter_with_confirm_on_screen:${w.id}:$k"))
         }
         return null
     }
