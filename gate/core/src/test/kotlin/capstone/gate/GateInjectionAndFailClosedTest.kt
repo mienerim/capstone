@@ -202,4 +202,19 @@ class GateInjectionAndFailClosedTest {
         assertTrue(lines[0].startsWith("{\"v\":1,\"ts\":42,\"seq\":1,"))
         assertTrue(lines[1].contains("\"decision\":\"BLOCK\"") && lines[1].contains("\"reason\":\"CONFIRM_NODE_TEXT\""))
     }
+
+    @Test
+    fun `증명 로그 파일이 줄 중간에서 끝났으면 다음 실행은 새 줄에서 시작한다`() {
+        val f = kotlin.io.path.createTempFile("gate", ".jsonl").toFile().apply { deleteOnExit() }
+        f.writeText("{\"v\":1,\"ts\":1,\"seq\":1,\"phase\":\"che") // 지난 실행이 쓰다 끊긴 줄
+        val w = app(group(button("검색")))
+        JsonlDecisionSink.appendingTo(f).use { sink -> Gate(Fx.policy, sink).check(snap(w, ts = 7), click(w, keyOfText(w, "검색"))) }
+        val lines = f.readText().split('\n')
+        assertEquals(3, lines.size)
+        assertTrue(lines[1].startsWith("{\"v\":1,\"ts\":7,") && lines[1].endsWith("}"), lines[1])
+        assertEquals("", lines[2])
+        // 이미 줄 끝이면 빈 줄을 만들지 않는다.
+        JsonlDecisionSink.appendingTo(f).use { sink -> Gate(Fx.policy, sink).check(snap(w, ts = 8), click(w, keyOfText(w, "검색"))) }
+        assertEquals(4, f.readText().split('\n').size)
+    }
 }

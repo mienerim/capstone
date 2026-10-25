@@ -14,7 +14,6 @@ import capstone.gate.exec.GatedExecutor
 import capstone.scenarios.MockKorail
 import capstone.service.DumperService
 import java.io.File
-import java.io.FileWriter
 
 /**
  * 실행 경로 조립(D36): 접근성 서비스의 raw 실행기 → GatedExecutor(유일한 실행 통로) → 상태머신.
@@ -31,17 +30,18 @@ class AgentHost(
     private val bg = Handler(worker.looper)
     private val main = Handler(Looper.getMainLooper())
     private var runner: ScenarioRunner? = null
-    private var proofLog: FileWriter? = null
+    private var proofLog: JsonlDecisionSink? = null
 
     /** 접근성 서비스가 켜져 있어야 실행할 수 있다. */
     val ready: Boolean get() = DumperService.instance != null
 
     fun start(flow: Flow, slots: Slots): ScenarioRunner {
         val svc = checkNotNull(DumperService.instance) { "접근성 서비스 꺼짐" }
-        proofLog?.close()
+        runCatching { proofLog?.close() } // 쓰기 실패로 끊긴 로그도 닫기에서 앱을 죽이지 않는다
         // 증명 로그(M7): gate의 모든 판정을 기기 안 파일에. run-as로 꺼낸다.
-        val log = FileWriter(File(filesDir, PROOF_LOG), true).also { proofLog = it }
-        val gate = Gate(GatePolicy(allowedPackages = flow.packages, ownPackage = OWN_PACKAGE), JsonlDecisionSink(log))
+        // 싱크가 판정마다 flush한다(실행 전에 디스크에, 쓰기 실패면 gate가 막음, I-98).
+        val log = JsonlDecisionSink.appendingTo(File(filesDir, PROOF_LOG)).also { proofLog = it }
+        val gate = Gate(GatePolicy(allowedPackages = flow.packages, ownPackage = OWN_PACKAGE), log)
         val classifier = MockKorail.classifier()
         val exec = GatedExecutor(gate, svc.actuator, svc.snapshots)
         return ScenarioRunner(flow, slots, classifier, exec, { svc.snapshots.capture() }).also { runner = it }
@@ -57,7 +57,6 @@ class AgentHost(
         override fun run() {
             val r = runner ?: return
             val st = r.tick()
-            proofLog?.flush()
             // 러너도 함께 넘긴다: '그만하기'·새 실행 뒤에 도착한 지난 러너의 상태는 세션이 버린다(I-85).
             main.post { onState(r, st) }
             when (st) {
@@ -78,7 +77,7 @@ class AgentHost(
         runner = null
         bg.removeCallbacksAndMessages(null)
         worker.quitSafely()
-        proofLog?.close()
+        runCatching { proofLog?.close() } // 쓰기 실패로 끊긴 로그도 닫기에서 앱을 죽이지 않는다
     }
 
     companion object {
