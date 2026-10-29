@@ -19,4 +19,5 @@ kotlin { jvmToolchain(17) }
 // 여기서는 AccessibilityNodeInfo를 A11yNode로 감싸기만 한다. 밖으로는 NodeRef만(D36).
 dependencies {
     api(project(":service:core"))
+    implementation(libs.mlkit.text.korean)
 }

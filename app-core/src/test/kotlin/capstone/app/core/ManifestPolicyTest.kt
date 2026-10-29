@@ -19,9 +19,10 @@ class ManifestPolicyTest {
     @Test
     fun `INTERNET·네트워크 권한을 선언한 매니페스트가 없다`() {
         val manifests = files("AndroidManifest.xml")
-        assertTrue(manifests.any { it.path.endsWith("app/src/main/AndroidManifest.xml") }, manifests.toString())
+        assertTrue(manifests.any { it.invariantSeparatorsPath.endsWith("app/src/main/AndroidManifest.xml") }, manifests.toString())
         manifests.forEach { f ->
-            val text = f.readText()
+            // 라이브러리가 넣는 권한을 병합 때 빼는 선언(tools:node="remove")은 위반이 아니다.
+            val text = f.readLines().filterNot { "tools:node=\"remove\"" in it }.joinToString("\n")
             assertTrue("android.permission.INTERNET" !in text, "${f.path}: INTERNET")
             assertTrue("ACCESS_NETWORK_STATE" !in text, "${f.path}: ACCESS_NETWORK_STATE")
         }

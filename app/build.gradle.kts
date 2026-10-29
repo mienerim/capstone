@@ -31,4 +31,6 @@ dependencies {
     implementation(project(":app-scenarios"))
     implementation(project(":llm:litertlm"))
     implementation(libs.androidx.core.ktx)
+    // 실험(10-30): llama.cpp 소스가 있는 PC에서만(settings 참고).
+    rootProject.findProject(":llm:llamacpp")?.let { implementation(it) }
 }

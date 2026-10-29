@@ -49,4 +49,11 @@ if (androidEnabled) {
         ":app",
         ":mock-app",
     )
+
+    // 실험(10-30): llama.cpp 엔진 비교. 소스(저장소 밖)가 있는 PC에서만 포함한다.
+    val llamaCppDir = file(providers.gradleProperty("capstone.llamaCppDir").getOrElse("../llama.cpp"))
+    if (llamaCppDir.resolve("CMakeLists.txt").exists()) {
+        include(":llm:llamacpp")
+        gradle.extra["capstone.llamaCppDir"] = llamaCppDir.absolutePath
+    }
 }

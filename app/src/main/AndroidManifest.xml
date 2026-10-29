@@ -1,7 +1,12 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!-- INTERNET 권한을 선언하지 않는다(완전 온디바이스, D1·D38). 빌드 후 aapt dump permissions로 확인.
      app-core ManifestPolicyTest가 저장소의 모든 매니페스트를 검사한다. -->
-<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools">
+
+    <!-- ML Kit(OCR 실험, 10-30)의 사용 통계 전송 모듈이 넣는 네트워크 권한을 병합 단계에서 뺀다. 인식은 번들 모델이라 영향 없음. -->
+    <uses-permission android:name="android.permission.INTERNET" tools:node="remove" />
+    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" tools:node="remove" />
 
     <!-- 진행 안내·'멈춤' 호출은 고정 알림으로(D39·D41). 거부하면 실행을 시작하지 않는다(D62·D66 ④). -->
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
