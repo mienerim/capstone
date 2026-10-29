@@ -73,7 +73,11 @@ class DumperService : AccessibilityService() {
         Log.i(TAG, "connected, dump → ${file.absolutePath} (session $session)")
         scheduleDump()
         main.postDelayed(tallyTask, TALLY_MS)
+        ocrProbe = OcrProbe(this, handler).also { it.register() }
     }
+
+    // 실험(10-30): 열차 목록 카드 OCR. adb broadcast로만 돈다(OcrProbe 참고).
+    private var ocrProbe: OcrProbe? = null
 
     private val tallyTask = object : Runnable {
         override fun run() {
@@ -102,6 +106,7 @@ class DumperService : AccessibilityService() {
     override fun onDestroy() {
         instance = null
         main.removeCallbacks(tallyTask)
+        ocrProbe?.unregister()
         Log.i(TAG, tally.summary())
         if (::worker.isInitialized) worker.quitSafely()
         writer?.close()
