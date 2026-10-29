@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+    <application>
+        <!-- 실험(10-30): 엔진 벤치. DUMP 권한 = 셸·시스템만 보낼 수 있다.
+             adb shell am broadcast -n capstone.app/capstone.llm.llamacpp.LlamaBenchReceiver -->
+        <receiver
+            android:name="capstone.llm.llamacpp.LlamaBenchReceiver"
+            android:exported="true"
+            android:permission="android.permission.DUMP" />
+    </application>
+</manifest>
