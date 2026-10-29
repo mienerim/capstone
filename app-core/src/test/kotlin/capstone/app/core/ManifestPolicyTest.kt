@@ -19,7 +19,7 @@ class ManifestPolicyTest {
     @Test
     fun `INTERNET·네트워크 권한을 선언한 매니페스트가 없다`() {
         val manifests = files("AndroidManifest.xml")
-        assertTrue(manifests.any { it.path.endsWith("app/src/main/AndroidManifest.xml") }, manifests.toString())
+        assertTrue(manifests.any { it.invariantSeparatorsPath.endsWith("app/src/main/AndroidManifest.xml") }, manifests.toString())
         manifests.forEach { f ->
             val text = f.readText()
             assertTrue("android.permission.INTERNET" !in text, "${f.path}: INTERNET")
